@@ -18,19 +18,22 @@
 void drawFail(void);
 
 /* Global things */
-int zx[1000];
-int zy[1000];
+uint16_t zx[1000];
+uint8_t zy[1000];
 uint8_t zs[1000];
 char fail_string[] = "Press [mode] to Play Again";
 
 void main( void ) {
     uint8_t key;
     uint8_t healthcolor;
-    unsigned BIG,hx,hy;
+    unsigned BIG;
+    uint16_t hx;
+    uint8_t hy;
     unsigned numzomb = 1;
     unsigned points = 0;
     unsigned j = 0;
-    int px = 158,py = 236;
+    uint16_t px = 158;
+    uint8_t py = 236;
     int i,k,l;
     int health = 200;
 
@@ -53,7 +56,9 @@ void main( void ) {
         
         /* Draw the health */
         gc_SetColorIndex(healthcolor);
-        gc_NoClipRectangle((320-health)/2, 3, health, 3);
+        if(health > 1) {
+            gc_NoClipRectangle((320-health)/2, 3, health, 3);
+        }
         
         gc_SetColorIndex(0x02);
         gc_NoClipRectangle(px, py, 4, 4);
