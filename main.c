@@ -136,7 +136,8 @@ void main( void ) {
         /* Have we died? */
         if(health <= 0) {
             drawFail();
-            points = numzomb = j = 0;
+            points = j = 0;
+            numzomb = 1;
             BIG = (rand()%150)+200;
             px = 158;
             py = 236;
