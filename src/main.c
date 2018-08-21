@@ -17,13 +17,23 @@
 /* Function prototypes */
 void drawFail(void);
 
+struct Zombie {
+	uint8_t x, y, s, t; //x position, y position, speed, target
+};
+
 /* Global things */
-uint16_t zx[1000];
-uint8_t zy[1000];
-uint8_t zs[1000];
+
+
+//uint16_t zx[1000];
+//uint8_t zy[1000];
+//uint8_t zs[1000];
+//uint8_t zt[1000];
 char fail_string[] = "Press [mode] to Play Again";
 
 void main( void ) {
+	
+	struct Zombie z[250];
+	
     uint8_t key;
     uint8_t healthcolor;
     unsigned BIG;
@@ -32,10 +42,28 @@ void main( void ) {
     unsigned numzomb = 1;
     unsigned points = 0;
     unsigned j = 0;
-    uint16_t px = 158;
-    uint8_t py = 236;
+    uint16_t px = 158; //player position x
+    uint8_t py = 236; //player position y
+	
+	uint16_t bombx = 0;
+	uint8_t bomby = 0;
+	int bombIsPlaced = 0;
+	int bombBlinker = 0x00;
+	int bombTimer = 5;
+	
+	uint16_t shrapnelX[8];
+	uint8_t shrapnelY[8];
+	int shrapnelXVel[8] = {-1, 0, 1, -1, 1, -1, 0, 1};
+	int shrapnelYVel[8] = {-1, -1, -1, 0, 0, 1, 1, 1};
+	
     int i,k,l;
+	int infected = 0;
     int health = 200;
+
+	int zbombs = 0;
+	uint8_t zrand = 0;
+	
+	int oldTime, time, oneSecond, xplTime;
 
     srand(rtc_Time());
     gfx_Begin(gfx_8bpp);
@@ -45,17 +73,28 @@ void main( void ) {
     BIG = rand()%150+200;
     hx = rand()%316;
     hy = rand()%236;
-    zx[0] = rand()%316;
-    zy[0] = rand()%236;
-    zs[0] = 2;
+    z[0].x = rand()%316;
+    z[0].y = rand()%236;
+    z[0].s = 2; //zombie speed
+	z[0].t = 0; //zombie target
     healthcolor = 0x00;
     
+	time = rtc_Time();
     while( kb_ScanGroup(kb_group_6) != kb_Clear ) {
+		
+		oldTime = time;
+		time = rtc_Time();
+		oneSecond = time - oldTime;
+		
         gfx_FillScreen(0x03);
         
         /* Draw the health */
         gfx_SetColor(healthcolor);
-        if(health > 1) {
+        if(health >= 1) {
+			if(infected && oneSecond){
+				health-=4;
+				gfx_SetColor(0x02);
+			}
             gfx_FillRectangle_NoClip((320-health)/2, 3, health, 3);
         }
         
@@ -71,36 +110,77 @@ void main( void ) {
         gfx_PrintInt(points, 3);
         gfx_SetColor(0x02);
         for(i = 0; i < numzomb; i++) {
-            gfx_FillRectangle_NoClip(zx[i], zy[i], 4, 4);
-            if(zx[i] < px && rand()&1) {
-                zx[i]+=zs[i];
-            }
-            if(zx[i] > px && rand()&1) {
-                zx[i]-=zs[i];
-            }
-            if(zy[i] < py && rand()&1) {
-                zy[i]+=zs[i];
-            }
-            if(zy[i] > py && rand()&1) {
-                zy[i]-=zs[i];
-            }
-            /* Zombie collisions */
-            if((px < zx[i] + 4) && (px + 4 > zx[i]) && (py < zy[i] + 4) && (4 + py > zy[i])) {
-                health-=2;
-            }
+			if(z[i].s != 0){
+				gfx_FillRectangle_NoClip(z[i].x, z[i].y, 4, 4);
+				if(z[i].t == 0){
+					if(z[i].x < px && rand()&1 && z[i].x < 316)
+						z[i].x+=z[i].s;
+					if(z[i].x > px && rand()&1 && z[i].x > 0)
+						z[i].x-=z[i].s;
+					if(z[i].y < py && rand()&1 && z[i].y < 236)
+						z[i].y+=z[i].s;
+					if(z[i].y > py && rand()&1 && z[i].y > 0)
+						z[i].y-=z[i].s;
+				} else {
+					if(z[i].x < bombx && rand()&1 && z[i].x < 316)
+						z[i].x+=z[i].s;
+					if(z[i].x > bombx && rand()&1 && z[i].x > 0)
+						z[i].x-=z[i].s;
+					if(z[i].y < bomby && rand()&1 && z[i].y < 236)
+						z[i].y+=z[i].s;
+					if(z[i].y > bomby && rand()&1 && z[i].y > 0)
+						z[i].y-=z[i].s;
+				}
+				/* Zombie collisions */
+				if((px < z[i].x + 4) && (px + 4 > z[i].x) && (py < z[i].y + 4) && (4 + py > z[i].y)) {
+					health-=2;
+					if(!infected)
+						infected = 1;
+				}
+			}
         }
-        
+		
+		if(bombIsPlaced && bombTimer > 0){
+			gfx_SetColor(0x01);
+			gfx_FillCircle(bombx, bomby, 2);
+			if(oneSecond == 1){
+				bombBlinker = (bombBlinker + 1) % 2;
+				bombTimer--;
+			}
+			gfx_SetColor(bombBlinker);
+			gfx_FillRectangle_NoClip(bombx - 1, bomby - 1, 3, 2);
+			
+			xplTime = time;
+		}
+		
+		if(bombTimer == 0){
+			gfx_SetColor(0x01);
+			for(i = 0; i < 16; i++){
+				gfx_FillCircle(bombx, bomby, i);
+			}
+			for(i = zbombs; i < numzomb; i++)
+				z[i].s = 0;
+			numzomb = numzomb - zbombs;
+			bombIsPlaced = 0;
+			bombTimer = 5;
+		}
+		
+		
+		
         if(j == BIG) {
-            zx[numzomb] = rand()%316;
-            zy[numzomb] = rand()%236;
-            zs[numzomb] = 2;
-            numzomb++;
+			z[numzomb].x = rand()%316;
+			z[numzomb].y = rand()%236;
+			z[numzomb].s = 2;
+			z[numzomb].t = 0; //initial target is the game player
+			numzomb++;
+			
             BIG = (rand()%150)+200;
             j = 0;
         }
         
         /* Process key input */
         key = kb_ScanGroup(kb_group_7);
+		
         if((key & kb_Left) && (px > 0) && (health > 0)) {
             px-=2;
         }
@@ -131,13 +211,34 @@ void main( void ) {
                 px+=1;
             }
         }
+		
+        key = kb_ScanGroup(kb_group_1);
+		if((key & kb_2nd) && (health > 0) && (bombIsPlaced == 0)){
+			
+			
+			
+			zrand = rand()%numzomb;
+			zbombs = numzomb - zrand;
+			
+			for(i = zbombs; i < numzomb; i++){
+				z[i].t = 1; //new target is bomb
+			}
+			
+			bombIsPlaced = 1;
+			bombx = px;
+			bomby = py;
+		}
+		
         
         /* Health bonus collisions */
         if((px < hx + 4) && (px + 4 > hx) && (py < hy + 4) && (4 + py > hy)) {
-            health+=5;
-            hx=rand()%316;
-            hy=rand()%236;
-            points++;
+			if(infected)
+				health+=10;
+			else
+				health+=5;
+				hx=rand()%316;
+				hy=rand()%236;
+				points++;
         }
         
         /* Have we died? */
@@ -145,13 +246,13 @@ void main( void ) {
             drawFail();
 			if(kb_ScanGroup(kb_group_1) == kb_Mode){
                 for(i = 0; i < numzomb; i++){
-                    zx[i] = 0;
-                    zy[i] = 0;
-                    zs[i] = 0;
+                    z[i].x = 0;
+                    z[i].y = 0;
+                    z[i].s = 0;
                 }
-				zx[0] = rand()%316;
-				zy[0] = rand()%236;
-				zs[0] = 2;
+				z[0].x = rand()%316;
+				z[0].y = rand()%236;
+				z[0].s = 1;
                 points = j = 0;
 				numzomb = 1;
 				BIG = (rand()%150)+200;
@@ -160,6 +261,7 @@ void main( void ) {
 				hx=rand()%316;
 				hy=rand()%236;
 				health = 200;
+				infected = 0;
             }
         }
         
