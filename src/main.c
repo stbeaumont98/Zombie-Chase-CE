@@ -18,7 +18,8 @@
 void drawFail(void);
 
 struct Zombie {
-	uint8_t x, y, s, t; //x position, y position, speed, target
+	uint24_t x;
+	uint8_t y, t; //x position, y position, target
 };
 
 /* Global things */
@@ -75,7 +76,6 @@ void main( void ) {
     hy = rand()%236;
     z[0].x = rand()%316;
     z[0].y = rand()%236;
-    z[0].s = 2; //zombie speed
 	z[0].t = 0; //zombie target
     healthcolor = 0x00;
     
@@ -110,33 +110,31 @@ void main( void ) {
         gfx_PrintInt(points, 3);
         gfx_SetColor(0x02);
         for(i = 0; i < numzomb; i++) {
-			if(z[i].s != 0){
-				gfx_FillRectangle_NoClip(z[i].x, z[i].y, 4, 4);
-				if(z[i].t == 0){
-					if(z[i].x < px && rand()&1 && z[i].x < 316)
-						z[i].x+=z[i].s;
-					if(z[i].x > px && rand()&1 && z[i].x > 0)
-						z[i].x-=z[i].s;
-					if(z[i].y < py && rand()&1 && z[i].y < 236)
-						z[i].y+=z[i].s;
-					if(z[i].y > py && rand()&1 && z[i].y > 0)
-						z[i].y-=z[i].s;
-				} else {
-					if(z[i].x < bombx && rand()&1 && z[i].x < 316)
-						z[i].x+=z[i].s;
-					if(z[i].x > bombx && rand()&1 && z[i].x > 0)
-						z[i].x-=z[i].s;
-					if(z[i].y < bomby && rand()&1 && z[i].y < 236)
-						z[i].y+=z[i].s;
-					if(z[i].y > bomby && rand()&1 && z[i].y > 0)
-						z[i].y-=z[i].s;
-				}
-				/* Zombie collisions */
-				if((px < z[i].x + 4) && (px + 4 > z[i].x) && (py < z[i].y + 4) && (4 + py > z[i].y)) {
-					health-=2;
-					if(!infected)
-						infected = 1;
-				}
+			gfx_FillRectangle_NoClip(z[i].x, z[i].y, 4, 4);
+			if(z[i].t == 0){
+				if(z[i].x < px && rand()&1)
+					z[i].x+=2;
+				if(z[i].x > px && rand()&1)
+					z[i].x-=2;
+				if(z[i].y < py && rand()&1)
+					z[i].y+=2;
+				if(z[i].y > py && rand()&1)
+					z[i].y-=2;
+			} else {
+				if(z[i].x < bombx && rand()&1)
+					z[i].x+=2;
+				if(z[i].x > bombx && rand()&1)
+					z[i].x-=2;
+				if(z[i].y < bomby && rand()&1)
+					z[i].y+=2;
+				if(z[i].y > bomby && rand()&1)
+					z[i].y-=2;
+			}
+			/* Zombie collisions */
+			if((px < z[i].x + 4) && (px + 4 > z[i].x) && (py < z[i].y + 4) && (4 + py > z[i].y)) {
+				health-=2;
+				if(!infected)
+					infected = 1;
 			}
         }
 		
@@ -158,8 +156,6 @@ void main( void ) {
 			for(i = 0; i < 16; i++){
 				gfx_FillCircle(bombx, bomby, i);
 			}
-			for(i = zbombs; i < numzomb; i++)
-				z[i].s = 0;
 			numzomb = numzomb - zbombs;
 			bombIsPlaced = 0;
 			bombTimer = 5;
@@ -170,7 +166,6 @@ void main( void ) {
         if(j == BIG) {
 			z[numzomb].x = rand()%316;
 			z[numzomb].y = rand()%236;
-			z[numzomb].s = 2;
 			z[numzomb].t = 0; //initial target is the game player
 			numzomb++;
 			
@@ -248,11 +243,9 @@ void main( void ) {
                 for(i = 0; i < numzomb; i++){
                     z[i].x = 0;
                     z[i].y = 0;
-                    z[i].s = 0;
                 }
 				z[0].x = rand()%316;
 				z[0].y = rand()%236;
-				z[0].s = 1;
                 points = j = 0;
 				numzomb = 1;
 				BIG = (rand()%150)+200;
