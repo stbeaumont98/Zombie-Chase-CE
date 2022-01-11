@@ -7,9 +7,12 @@
 
 NAME        ?= ZMBCHS
 COMPRESSED  ?= NO
-ICON        ?= iconc.png
+ICON        ?= icon.png
 DESCRIPTION ?= "Zombie Chase for the TI-CE Series"
+
+CFLAGS = -Wall -Wextra -Oz
+CXXFLAGS = -Wall -Wextra -Oz
 
 # ----------------------------
 
-include $(CEDEV)/include/.makefile
+include $(shell cedev-config --makefile)
