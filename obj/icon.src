@@ -1,0 +1,27 @@
+	section .icon
+
+	jp	___prgm_init
+	db	$01
+	public ___icon
+___icon:
+	db	$10, $10
+	db	$FF, $A1, $B5, $B5, $B5, $B5, $A1, $B5, $B5, $A1, $24, $03, $24, $A1, $24, $FF
+	db	$B5, $A1, $FF, $FF, $FF, $FF, $A1, $24, $03, $24, $24, $03, $24, $A1, $03, $A1
+	db	$A1, $FF, $FF, $A1, $A1, $FF, $FF, $A1, $24, $24, $24, $24, $24, $03, $03, $03
+	db	$FF, $B5, $B5, $A1, $B5, $B5, $B5, $B5, $03, $A1, $03, $24, $03, $24, $24, $FF
+	db	$FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $03, $24, $03, $24, $03, $FF, $FF
+	db	$FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $03, $24, $24, $03, $A1, $FF, $FF, $FF
+	db	$FF, $FF, $FF, $FF, $FF, $FF, $FF, $03, $24, $24, $24, $A1, $FF, $FF, $FF, $FF
+	db	$FF, $FF, $FF, $FF, $FF, $FF, $B5, $FF, $24, $03, $24, $FF, $FF, $FF, $FF, $FF
+	db	$FF, $FF, $FF, $FF, $FF, $B5, $FF, $24, $24, $24, $FF, $FF, $FF, $FF, $FF, $FF
+	db	$FF, $FF, $FF, $FF, $B5, $FF, $FF, $FF, $A1, $FF, $FF, $FF, $FF, $FF, $FF, $FF
+	db	$FF, $FF, $FF, $B5, $FF, $A1, $A1, $A1, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
+	db	$FF, $FF, $A1, $FF, $FF, $A1, $B5, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
+	db	$FF, $B5, $A1, $FF, $FF, $B5, $B5, $03, $24, $24, $03, $24, $A1, $24, $24, $FF
+	db	$B5, $A1, $FF, $FF, $FF, $FF, $A1, $FF, $24, $24, $24, $03, $A1, $24, $03, $03
+	db	$B5, $FF, $FF, $A1, $A1, $FF, $FF, $A1, $A1, $24, $03, $24, $24, $03, $03, $03
+	db	$FF, $B5, $B5, $B5, $A1, $B5, $B5, $A1, $B5, $24, $24, $24, $24, $03, $24, $FF
+	public ___description
+___description:
+	db	"Zombie Chase for the TI-CE Series", 0
+___prgm_init:
