@@ -12,264 +12,298 @@
 #include <graphx.h>
 #include <keypadc.h>
 
-#include "gfx\gfx_group_1.h"
+#include "gfx\gfx.h"
+#include "gfx\zombie_font.h"
+
+#define COLOR_RED 0x00
+#define COLOR_GREEN 0x01
+#define COLOR_DARK_GREEN 0x02
+#define COLOR_DARK_RED 0x03
+#define COLOR_WHITE 0x05
+#define COLOR_BLACK 0x06
+#define COLOR_LIGHT_RED 0x07
 
 /* Function prototypes */
-void drawFail(void);
+void drawPlayer(uint16_t x, uint8_t y);
+void drawHealthPack(uint16_t x, uint8_t y);
+void drawZombie(uint16_t x, uint8_t y);
+void drawCustomText(char* text, uint8_t color, int x, int y, int scale);
+void drawFail();
 
-struct Zombie {
-	uint24_t x;
-	uint8_t y, t; //x position, y position, target
-};
+typedef struct Player
+{
+	uint16_t x;
+	uint8_t y;
+	int health;
+} Player;
 
-/* Global things */
+typedef struct Zombie {
+	uint16_t x;
+	uint8_t y;
+	Player *target;
+} Zombie;
 
+char fail_string[] = "PRESS [MODE] TO PLAY AGAIN";
 
-//uint16_t zx[1000];
-//uint8_t zy[1000];
-//uint8_t zs[1000];
-//uint8_t zt[1000];
-char fail_string[] = "Press [mode] to Play Again";
+int main() {
+	
+	Zombie z[0xFF];					// Up to 255 zombies can be on screen at once.
+	
+    kb_key_t key;					// Variable to store keypad input.
+    uint8_t zombie_spawn_timer;		// Timer for zombies to spawn.
+    uint16_t hp_x;					// Health pack x and y.
+    uint8_t hp_y;
+    uint8_t zombie_count = 1;		// Number of zombies currently spawned.
+    uint16_t points = 0;			// Points obtained by the player.
 
-void main( void ) {
+	/* Initialize the player */
+	Player p;
+    p.x = 156;
+    p.y = 232;
+    p.health = 200;
 	
-	struct Zombie z[250];
+	uint8_t i;
+	bool infected = false;
 	
-    uint8_t key;
-    uint8_t healthcolor;
-    unsigned BIG;
-    uint16_t hx;
-    uint8_t hy;
-    unsigned numzomb = 1;
-    unsigned points = 0;
-    unsigned j = 0;
-    uint16_t px = 158; //player position x
-    uint8_t py = 236; //player position y
-	
-	uint16_t bombx = 0;
-	uint8_t bomby = 0;
-	int bombIsPlaced = 0;
-	int bombBlinker = 0x00;
-	int bombTimer = 5;
-	
-	uint16_t shrapnelX[8];
-	uint8_t shrapnelY[8];
-	int shrapnelXVel[8] = {-1, 0, 1, -1, 1, -1, 0, 1};
-	int shrapnelYVel[8] = {-1, -1, -1, 0, 0, 1, 1, 1};
-	
-    int i,k,l;
-	int infected = 0;
-    int health = 200;
-
-	int zbombs = 0;
-	uint8_t zrand = 0;
-	
-	int oldTime, time, oneSecond, xplTime;
+	int old_time, time, one_second;
 
     srand(rtc_Time());
+
+	/* Set up graphics */
     gfx_Begin(gfx_8bpp);
-	gfx_SetPalette(gfx_group_1_pal, sizeof(gfx_group_1_pal), 0);
+	gfx_SetPalette(zombie_palette, sizeof(zombie_palette), 0);
 	gfx_SetDrawBuffer();
+
+	/* Set up the font */
+    gfx_SetFontData(font);
+    gfx_SetFontSpacing(font_spacing);
+	gfx_SetFontHeight(6);
     
-    BIG = rand()%150+200;
-    hx = rand()%316;
-    hy = rand()%236;
-    z[0].x = rand()%316;
-    z[0].y = rand()%236;
-	z[0].t = 0; //zombie target
-    healthcolor = 0x00;
+    zombie_spawn_timer = rand() % 2 + 3;
+    hp_x = rand() % 310 + 2;
+    hp_y = rand() % 230 + 2;
+	
+	for (i = 0; i < 0xFF; i++) {
+		z[i].x = rand() % 310 + 2;
+		z[i].y = rand() % 230 + 2;
+		z[i].target = NULL;
+	}
+	
+	z[0].target = &p; // The first zombie goes after the player.
     
 	time = rtc_Time();
-    while( kb_ScanGroup(kb_group_6) != kb_Clear ) {
+	
+    do { // Game loop
+
+		kb_Scan();
 		
-		oldTime = time;
+		old_time = time;
 		time = rtc_Time();
-		oneSecond = time - oldTime;
+		one_second = time - old_time;
 		
-        gfx_FillScreen(0x03);
-        
-        /* Draw the health */
-        gfx_SetColor(healthcolor);
-        if(health >= 1) {
-			if(infected && oneSecond){
-				health-=4;
-				gfx_SetColor(0x02);
+		/* Black background */
+        gfx_FillScreen(COLOR_BLACK);
+
+        /* Draw the health bar */
+		gfx_SetColor(COLOR_WHITE);				// White
+		gfx_Rectangle_NoClip(58, 3, 204, 9);	// Draw the outline of the health bar.
+        gfx_SetColor(COLOR_RED);				// Health color red.
+
+        if (p.health >= 1) {
+            gfx_FillRectangle_NoClip(60, 5, p.health, 5);
+			gfx_SetColor(COLOR_LIGHT_RED);
+			gfx_HorizLine_NoClip(60, 5, p.health);
+			gfx_SetColor(COLOR_DARK_RED);
+			gfx_FillRectangle_NoClip(60, 8, p.health, 2);
+
+			if (infected && one_second) {
+				if (p.health >= 4)
+					p.health-=4;
+				else
+					p.health = 0;
 			}
-            gfx_FillRectangle_NoClip((320-health)/2, 3, health, 3);
         }
         
-        gfx_SetColor(0x01);
-        gfx_FillRectangle_NoClip(px, py, 4, 4);
-        gfx_SetColor(healthcolor);
-        gfx_FillRectangle_NoClip(hx, hy, 4, 4);
-        gfx_SetTextFGColor(0x02);
-        gfx_SetTextBGColor(0x00);
-        gfx_SetTextTransparentColor(0x00);
-        gfx_SetTextXY(0, 232);
-        gfx_SetTextFGColor(0x01);
+        drawPlayer(p.x, p.y);
+		drawHealthPack(hp_x, hp_y);
+        gfx_SetTextFGColor(COLOR_WHITE);
+        gfx_SetTextBGColor(COLOR_BLACK);
+        gfx_SetTextTransparentColor(COLOR_BLACK);
+        gfx_SetTextXY(2, 226);
+		gfx_SetTextScale(2, 2);
         gfx_PrintInt(points, 3);
-        gfx_SetColor(0x02);
-        for(i = 0; i < numzomb; i++) {
-			gfx_FillRectangle_NoClip(z[i].x, z[i].y, 4, 4);
-			if(z[i].t == 0){
-				if(z[i].x < px && rand()&1)
-					z[i].x+=2;
-				if(z[i].x > px && rand()&1)
-					z[i].x-=2;
-				if(z[i].y < py && rand()&1)
-					z[i].y+=2;
-				if(z[i].y > py && rand()&1)
-					z[i].y-=2;
-			} else {
-				if(z[i].x < bombx && rand()&1)
-					z[i].x+=2;
-				if(z[i].x > bombx && rand()&1)
-					z[i].x-=2;
-				if(z[i].y < bomby && rand()&1)
-					z[i].y+=2;
-				if(z[i].y > bomby && rand()&1)
-					z[i].y-=2;
-			}
-			/* Zombie collisions */
-			if((px < z[i].x + 4) && (px + 4 > z[i].x) && (py < z[i].y + 4) && (4 + py > z[i].y)) {
-				health-=2;
-				if(!infected)
-					infected = 1;
+		
+        for (i = 0; i < zombie_count; i++) {
+			if (z[i].target != NULL) {
+				drawZombie(z[i].x, z[i].y);
+
+				// Zombie moves toward its target.
+				if (z[i].x < z[i].target->x && rand() & 1)
+					z[i].x += 2;
+				if (z[i].x > z[i].target->x && rand() & 1)
+					z[i].x -= 2;
+				if (z[i].y < z[i].target->y && rand() & 1)
+					z[i].y += 2;
+				if (z[i].y > z[i].target->y && rand() & 1)
+					z[i].y -= 2;
+
+				// Zombie bounds; They only go as far as the player, but this code is just in case.
+				if (z[i].x < 2)
+					z[i].x = 2;
+				if (z[i].x > 312)
+					z[i].x = 312;
+				if (z[i].y < 2)
+					z[i].y = 2;
+				if (z[i].y > 232)
+					z[i].y = 232;
+
+				/* Zombie/Player collisions */
+				if ((p.x < z[i].x + 6) && (p.x + 6 > z[i].x) && (p.y < z[i].y + 6) && (6 + p.y > z[i].y)) {
+					p.health--;
+					if (!infected)
+						infected = 1;
+				}
+
 			}
         }
 		
-		if(bombIsPlaced && bombTimer > 0){
-			gfx_SetColor(0x01);
-			gfx_FillCircle(bombx, bomby, 2);
-			if(oneSecond == 1){
-				bombBlinker = (bombBlinker + 1) % 2;
-				bombTimer--;
-			}
-			gfx_SetColor(bombBlinker);
-			gfx_FillRectangle_NoClip(bombx - 1, bomby - 1, 3, 2);
-			
-			xplTime = time;
-		}
 		
-		if(bombTimer == 0){
-			gfx_SetColor(0x01);
-			for(i = 0; i < 16; i++){
-				gfx_FillCircle(bombx, bomby, i);
-			}
-			numzomb = numzomb - zbombs;
-			bombIsPlaced = 0;
-			bombTimer = 5;
-		}
-		
-		
-		
-        if(j == BIG) {
-			z[numzomb].x = rand()%316;
-			z[numzomb].y = rand()%236;
-			z[numzomb].t = 0; //initial target is the game player
-			numzomb++;
-			
-            BIG = (rand()%150)+200;
-            j = 0;
+        if (zombie_spawn_timer == 0 && zombie_count < 0xFF) {
+			z[zombie_count % 0xFF].x = rand() % 310 + 2;
+			z[zombie_count % 0xFF].y = rand() % 230 + 2;
+			z[zombie_count % 0xFF].target = &p;
+			zombie_count++;
+            zombie_spawn_timer = rand() % 2 + 3;
         }
         
         /* Process key input */
-        key = kb_ScanGroup(kb_group_7);
-		
-        if((key & kb_Left) && (px > 0) && (health > 0)) {
-            px-=2;
-        }
-        if((key & kb_Right) && (px < 315) && (health > 0)) {
-            px+=2;
-        }
-        if((key & kb_Up) && (py > 0) && (health > 0)) {
-            py-=2;
-        }
-        if((key & kb_Down) && (py < 235) && (health > 0)) {
-            py+=2;
-        }
-        if((py < 235) && (py > 0) && (px < 315) && (px > 0) && (health > 0)) {
-            if(key & kb_Up & kb_Left) {
-                py+=1;
-                px-=1;
-            }
-            if(key & kb_Up & kb_Right) {
-                py+=1;
-                px+=1;
-            }
-            if(key & kb_Down & kb_Left) {
-                py-=1;
-                px-=1;
-            }
-            if(key & kb_Down & kb_Right) {
-                py-=1;
-                px+=1;
-            }
-        }
-		
-        key = kb_ScanGroup(kb_group_1);
-		if((key & kb_2nd) && (health > 0) && (bombIsPlaced == 0)){
+
+		if (p.health > 0) {
+
+       		key = kb_Data[7];
+
+			if (key & kb_Left)
+				p.x -= 2;
+			if (key & kb_Right)
+				p.x += 2;
+			if (key & kb_Up)
+				p.y -= 2;
+			if (key & kb_Down)
+				p.y += 2;
 			
-			
-			
-			zrand = rand()%numzomb;
-			zbombs = numzomb - zrand;
-			
-			for(i = zbombs; i < numzomb; i++){
-				z[i].t = 1; //new target is bomb
+			if (key & kb_Up & kb_Left) {
+				p.y += 1;
+				p.x -= 1;
 			}
-			
-			bombIsPlaced = 1;
-			bombx = px;
-			bomby = py;
+			if (key & kb_Up & kb_Right) {
+				p.y += 1;
+				p.x += 1;
+			}
+			if (key & kb_Down & kb_Left) {
+				p.y -= 1;
+				p.x -= 1;
+			}
+			if (key & kb_Down & kb_Right) {
+				p.y -= 1;
+				p.x += 1;
+			}
 		}
-		
-        
-        /* Health bonus collisions */
-        if((px < hx + 4) && (px + 4 > hx) && (py < hy + 4) && (4 + py > hy)) {
-			if(infected)
-				health+=10;
-			else
-				health+=5;
-				hx=rand()%316;
-				hy=rand()%236;
-				points++;
+
+		// Player bounds.
+		if (p.x < 2)
+			p.x = 2;
+		if (p.x > 312)
+			p.x = 312;
+		if (p.y < 2)
+			p.y = 2;
+		if (p.y > 232)
+			p.y = 232;
+
+        /* Health pack collisions */
+        if ((p.x < hp_x + 6) && (p.x + 5 > hp_x) && (p.y < hp_y + 6) && (5 + p.y > hp_y)) {
+			if (infected)
+				p.health += 10;
+			else 
+				p.health += 5;
+			hp_x = rand() % 310 + 2;
+			hp_y = rand() % 230 + 2;
+			points++;
         }
+
+		/* Health cannot exceed 200 */
+		if (p.health > 200)
+			p.health = 200;
         
-        /* Have we died? */
-        if(health <= 0) {
+        /* Check if the player has died. */
+        if (p.health <= 0) {
+			p.health = 0;
             drawFail();
-			if(kb_ScanGroup(kb_group_1) == kb_Mode){
-                for(i = 0; i < numzomb; i++){
-                    z[i].x = 0;
-                    z[i].y = 0;
-                }
-				z[0].x = rand()%316;
-				z[0].y = rand()%236;
-                points = j = 0;
-				numzomb = 1;
-				BIG = (rand()%150)+200;
-				px = 158;
-				py = 236;
-				hx=rand()%316;
-				hy=rand()%236;
-				health = 200;
-				infected = 0;
+			if (kb_Data[1] & kb_Mode) {
+				for (i = 0; i < zombie_count; i++) {
+					z[i].x = 0;
+					z[i].y = 0;
+					z[i].target = &p;
+				}
+				z[0].x = rand() % 310 + 2;
+				z[0].y = rand() % 230 + 2;
+				z[0].target = &p;
+				points = 0;
+				zombie_count = 1;
+				zombie_spawn_timer = rand() % 2 + 3;
+				p.x = 156;
+				p.y = 232;
+				hp_x = rand() % 310 + 2;
+				hp_y = rand() % 230 + 2;
+				p.health = 200;
+				infected = false;
             }
         }
         
-        j++;
+		// Decrement the zombie spawner every second.
+		if (one_second)
+        	zombie_spawn_timer--;
+
         gfx_SwapDraw();
-    }
-    
+
+    } while (!(kb_Data[6] & kb_Clear));
+
     gfx_End();
     pgrm_CleanUp();
+	return 0;
 }
 
-void drawFail(void) {
-    gfx_ScaledTransparentSprite_NoClip(ZombieFail, 78, 64, 4, 4);
-    gfx_SetTextFGColor(0x02);
-    gfx_PrintStringXY(fail_string, 74, 154);
-    gfx_SetTextFGColor(0x01);
-    gfx_PrintStringXY(fail_string, 75, 155);
+void drawPlayer(uint16_t x, uint8_t y) {
+	gfx_SetColor(COLOR_WHITE);
+    gfx_FillRectangle_NoClip(x + 1, y, 3, 5);
+    gfx_FillRectangle_NoClip(x, y + 1, 5, 3);
+}
+
+void drawHealthPack(uint16_t x, uint8_t y) {
+    gfx_SetColor(COLOR_RED);
+    gfx_FillRectangle_NoClip(x + 2, y, 2, 6);
+    gfx_FillRectangle_NoClip(x, y + 2, 6, 2);
+}
+
+void drawZombie(uint16_t x, uint8_t y) {
+    gfx_SetColor(COLOR_DARK_GREEN);
+	gfx_FillRectangle_NoClip(x, y, 4, 4);
+	gfx_FillRectangle_NoClip(x + 2, y + 2, 4, 4);
+	gfx_SetColor(COLOR_GREEN);
+	gfx_FillRectangle_NoClip(x + rand() % 4, y + rand() % 4, 2, 2);
+	gfx_SetColor(COLOR_DARK_RED);
+	gfx_FillRectangle_NoClip(x + rand() % 4, y + rand() % 4, 2, 2);
+}
+
+void drawCustomText(char* text, uint8_t color, int x, int y, int scale) {
+	gfx_SetTextFGColor(color);
+    gfx_SetTextBGColor(COLOR_RED);
+    gfx_SetTextTransparentColor(COLOR_RED);
+    gfx_SetTextXY(x, y);
+	gfx_SetTextScale(scale, scale);
+	gfx_PrintString(text);
+}
+
+void drawFail() {
+    gfx_ScaledTransparentSprite_NoClip(fail, 73, 76, 6, 6);
+	drawCustomText(fail_string, COLOR_WHITE, 57, 148, 2);
 }
