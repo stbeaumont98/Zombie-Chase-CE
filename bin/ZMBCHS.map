@@ -2,68 +2,81 @@ Section          Base   Top    High   Length
 ---------------- ------ ------ ------ -------
 .icon            D1A882 D1A9AB           129h
 .init.libs       D1A9AB D1AA03            58h
-.libs            D1AA03 D1AA6E            6Bh
-.init.clock      D1AA6E D1AA6E             0h
-.init.reruncheck D1AA6E D1AA6E             0h
-.init            D1AA6E D1AA8E            20h
-.fini            D1AA8E D1AAC2            34h
-.text            D1AAC2 D1BA86           FC4h
-.data            D1BA86 D1C09F           619h
-.rodata          D1C09F D1C0C1            22h
+.libs            D1AA03 D1AA72            6Fh
+.init.clock      D1AA72 D1AA72             0h
+.init.reruncheck D1AA72 D1AA72             0h
+.init            D1AA72 D1AA9C            2Ah
+.fini            D1AA9C D1AAD0            34h
+.text            D1AAD0 D1C29D          17CDh
+.data            D1C29D D1DDF5          1B58h
+.rodata          D1DDF5 D1DE1D            28h
 .init_array      000000 000000             0h
 .ctors           000000 000000             0h
 .dtors           000000 000000             0h
 .fini_array      000000 000000             0h
-.bss             D052C6 D052C6 D13FD8      0h
+.bss             D052C6 D052CD D13FD8      7h
 .header          D1A87F D1A882             3h
 
 Label                                  Value
 ------------------------------------   ------
 ___low_bss                           = D052C6
-___len_bss                           = 000000
+___len_bss                           = 000007
 ___heaptop                           = D13FD8
-___heapbot                           = D052C6
+___heapbot                           = D052CD
 ___libs                              = D1AA03
 ___init_array_count                  = 000000
 ___ctors_count                       = 000000
 ___dtors_count                       = 000000
 ___fini_array_count                  = 000000
 __stack                              = D1A87E
-_os_DisableHomeTextBuffer            = D1AAC2
-_os_EnableHomeTextBuffer             = D1AAD4
-_random                              = D1AAE6
-__setstate                           = D1AB44
-__state                              = D1BA86
-__frameset                           = D1AB54
-_rand                                = D1AB62
+_os_DisableHomeTextBuffer            = D1AAD0
+_os_EnableHomeTextBuffer             = D1AAE2
+_random                              = D1AAF4
+__setstate                           = D1AB52
+__state                              = D1C29D
+_free                                = D1AB62
+_malloc                              = D1AC0B
+__alloc_base                         = D052C6
+__frameset                           = D1ACA7
+_rand                                = D1ACB5
+_sbrk                                = D1ACC2
+__sbrkbase                           = D1C2AD
 __iand                               = 000134
 __imulu                              = 000158
 __irems                              = 00016C
 __sand                               = 000200
 __setflag                            = 000218
-_srand                               = D1AB6F
-.missingappvar                       = D1C09F
-.libloadname                         = D1C0A4
+_srand                               = D1ACE0
+.missingappvar                       = D1DDF5
+.libloadname                         = D1DDFA
 .libloadnamelen                      = 000007
-.webaddress                          = D1C0AC
-__start                              = D1AA6E
-___exithl                            = D1AA8E
-skip._exit                           = D1AA8E
-skip.__Exit                          = D1AA8E
-skip._abort                          = D1AA8E
-_exit.sp                             = D1AA8F
-_exit.flash_wait_states              = D1AA99
-_fail_data                           = D1BA96
-_zombie_palette                      = D1BBF4
-_main                                = D1AB77
-_drawPlayer                          = D1B86A
-_drawHealthPack                      = D1B8BC
-_drawZombie                          = D1B90E
-_drawCustomText                      = D1B9E2
-_drawFail                            = D1BA45
-_font                                = D1BC04
-_fail_string                         = D1C004
-_font_spacing                        = D1C01F
+.webaddress                          = D1DE02
+__start                              = D1AA72
+___exithl                            = D1AA9C
+skip._exit                           = D1AA9C
+skip.__Exit                          = D1AA9C
+skip._abort                          = D1AA9C
+_exit.sp                             = D1AA9D
+_exit.flash_wait_states              = D1AAA7
+_c4_data                             = D1C2B0
+_fail_data                           = D1C393
+_grenade_data                        = D1C4F1
+_katana_data                         = D1C5D4
+_machete_data                        = D1C6B7
+_zombie_palette                      = D1C79A
+_main                                = D1ACE8
+_drawCustomText                      = D1BDC4
+_drawPlayer                          = D1BE27
+_drawHealthPack                      = D1BE79
+_drawZombie                          = D1BECB
+_drawStore                           = D1BF9F
+_drawFail                            = D1C25C
+_font                                = D1C7BA
+_fail_string                         = D1CBBA
+_status_string                       = D052CC
+_store_inv                           = D1CBD5
+_font_spacing                        = D1DD75
+L_.str                               = D1DE17
 _#gfx_Begin                          = D1AA0C
 _#gfx_End                            = D1AA10
 _#gfx_SetColor                       = D1AA14
@@ -86,3 +99,4 @@ _#gfx_ScaledTransparentSprite_NoClip = D1AA54
 _#gfx_SetTextScale                   = D1AA58
 _#gfx_SetFontHeight                  = D1AA5C
 _#kb_Scan                            = D1AA6A
+_#kb_AnyKey                          = D1AA6E

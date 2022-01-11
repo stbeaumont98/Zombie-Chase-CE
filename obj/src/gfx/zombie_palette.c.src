@@ -3,6 +3,6 @@
 	section	.data,"aw",@progbits
 	public	_zombie_palette
 _zombie_palette:
-	db	0, "|'D‰ Tdôÿÿ", 0, 0, "Î}"
+	db	0, "|'D‰ TÈ™ÿÿ", 0, 0, "Î}çÎ¹ÊÉoZÖÚ°êójdô"
 
 	ident	"clang version 14.0.0 (https://github.com/jacobly0/llvm-project a139def90d26173f771eb1eca797633d1fbb2797)"
