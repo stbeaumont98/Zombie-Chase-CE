@@ -1,0 +1,25 @@
+palettes:
+  - name: zombie_palette
+    fixed-entries:
+      - color: {index: 0, r: 255, g: 0, b: 0}
+      - color: {index: 1, r: 24, g: 138, b: 57}
+      - color: {index: 2, r: 16, g: 85, b: 32}
+      - color: {index: 3, r: 174, g: 40, b: 0}
+      - color: {index: 5, r: 255, g: 255, b: 255}
+      - color: {index: 6, r: 0, g: 0, b: 0}
+      - color: {index: 7, r: 255, g: 115, b: 115}
+    images: automatic
+
+converts:
+  - name: zombie_sprites
+    palette: zombie_palette
+    images:
+      - fail.png
+
+outputs:
+  - type: c
+    include-file: gfx.h
+    palettes:
+      - zombie_palette
+    converts:
+      - zombie_sprites
