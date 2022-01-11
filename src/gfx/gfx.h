@@ -8,6 +8,10 @@ extern "C" {
 #include "zombie_palette.h"
 #define zombie_sprites_palette_offset 0
 #include "fail.h"
+#include "machete.h"
+#include "katana.h"
+#include "grenade.h"
+#include "c4.h"
 
 #ifdef __cplusplus
 }

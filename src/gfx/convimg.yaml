@@ -15,6 +15,10 @@ converts:
     palette: zombie_palette
     images:
       - fail.png
+      - machete.png
+      - katana.png
+      - grenade.png
+      - c4.png
 
 outputs:
   - type: c
