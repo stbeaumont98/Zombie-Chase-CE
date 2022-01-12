@@ -8,6 +8,8 @@ palettes:
       - color: {index: 5, r: 255, g: 255, b: 255}
       - color: {index: 6, r: 0, g: 0, b: 0}
       - color: {index: 7, r: 255, g: 115, b: 115}
+      - color: {index: 8, r: 179, g: 153, b: 121}
+      - color: {index: 9, r: 182, g: 182, b: 182}
     images: automatic
 
 converts:
@@ -19,6 +21,7 @@ converts:
       - katana.png
       - grenade.png
       - c4.png
+      - land_mine.png
 
 outputs:
   - type: c
