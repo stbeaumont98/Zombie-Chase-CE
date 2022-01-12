@@ -22,11 +22,16 @@
 #define COLOR_WHITE 0x05
 #define COLOR_BLACK 0x06
 #define COLOR_LIGHT_RED 0x07
+#define COLOR_BEIGE 0x08
+#define COLOR_GRAY 0x09
 
+/* Target types */
 #define TYPE_GRENADE 0
-#define TYPE_LURE 1
-#define TYPE_BIG_LURE 2
+#define TYPE_C4 1
+#define TYPE_LAND_MINE 2
+#define TYPE_LURE 3
 
+/* Item types */
 #define ID_MACHETE 0			// A machete can be swung all around and kill some zombies within its reach.
 #define ID_KATANA 1				// A katana can also be swung around, but its range is bigger.
 #define ID_GRENADE 2			// Grenades explode after an amount of time passes and then kills the zombies lured to it and that's about it.
@@ -44,14 +49,6 @@
 #define ID_LIGHTWEIGHT_BOOTS 14	// Lightweight boots make the player move faster but can be damaged by a few bites.
 #define ID_HEAVYWEIGHT_BOOTS 15	// Heavyweight boots make the player move faster and can be damaged by more bites.
 
-/* Function prototypes */
-void drawPlayer(uint16_t x, uint8_t y);
-void drawHealthPack(uint16_t x, uint8_t y);
-void drawZombie(uint16_t x, uint8_t y);
-void drawCustomText(char* text, uint8_t color, int x, int y, int scale);
-void drawFail();
-void drawStore(bool can_press);
-
 typedef struct Item {
 	uint16_t id;
 	char name[20];
@@ -60,8 +57,16 @@ typedef struct Item {
 	gfx_sprite_t *icon;
 } Item;
 
-typedef struct Player
-{
+typedef struct Target {
+	uint16_t x;
+	uint8_t y;
+	uint8_t timer;
+	uint8_t radius;
+	uint8_t type;
+	bool alive;
+} Target;
+
+typedef struct Player {
 	uint16_t x;
 	uint8_t y;
 	int health;
@@ -71,20 +76,22 @@ typedef struct Player
 	Item *equipped_boots;
 } Player;
 
-typedef struct ChaseableObject
-{
-	uint8_t id;
-	uint16_t x;
-	uint8_t y;
-	uint8_t timer;				// Used to track if the object still exists.
-	uint8_t range;
-} ChaseableObject;
-
 typedef struct Zombie {
 	uint16_t x;
 	uint8_t y;
-	ChaseableObject *target;
+	Target *target;
+	bool alive;
 } Zombie;
+
+/* Function prototypes */
+void draw_player(uint16_t x, uint8_t y);
+void draw_health_pack(uint16_t x, uint8_t y);
+void draw_zombie(uint16_t x, uint8_t y);
+void draw_custom_text(char* text, uint8_t color, int x, int y, int scale);
+void draw_custom_int(int i, uint8_t color, int x, int y, int scale);
+void draw_fail();
+void draw_store(bool can_press);
+void explode_target(Zombie z);
 
 char fail_string[] = "PRESS [MODE] TO PLAY AGAIN";
 char status_string[] = "";
@@ -94,7 +101,7 @@ static Item store_inv[16] = {		// Items that can be bought in the store.
 	{ID_KATANA, "Katana", "A katana can also be swung around, but its range is bigger.", 50, katana},
 	{ID_GRENADE, "Grenade", "Grenades explode after an amount of time passes and then kills the zombies lured to it and that's about it.", 15, grenade},
 	{ID_C4, "C4", "C4 explodes at the players command and kills the zombies lured to it and zombies within a medium-sized radius.", 100, c4},
-	{ID_LAND_MINE, "Land Mine", "Land mines explode on contact killing anything within its medium-sized blast radius.", 50, NULL},
+	{ID_LAND_MINE, "Land Mine", "Land mines explode on contact killing anything within its medium-sized blast radius.", 50, land_mine},
 	{ID_THE_BIG_ONE, "The Big One", "The big one kills all the zombies currently on the screen.", 100, NULL},
 	{ID_SMALL_LURE, "Small Lure", "Lures some zombies so the player may have some time to collect more things.", 20, NULL},
 	{ID_MEDIUM_LURE, "Medium Lure", "Lures more zombies than the small lure for a longer time period.", 50, NULL},
@@ -110,32 +117,24 @@ static Item store_inv[16] = {		// Items that can be bought in the store.
 
 int main() {
 	
-	Zombie z[0xFF];			// Up to 255 zombies can be on screen at once.
+	Zombie z[0xFF];					// Up to 255 zombies can be on screen at once.
 	
     kb_key_t key;					// Variable to store keypad input.
     uint8_t zombie_spawn_timer;		// Timer for zombies to spawn.
     uint16_t hp_x;					// Health pack x and y.
     uint8_t hp_y;
 	uint8_t zombie_rand = 0;
-	uint8_t zombie_offset = 0;		// Offset from the beginning of the zombie list.
     uint8_t zombie_count = 1;		// Number of zombies currently spawned.
     uint16_t points = 0;			// Points obtained by the player.
 
-	Player p;	// The player is a chaseable target.
-
-    p.x = 156;			// Player x and y.
+	/* Define the player */
+	Player p;
+    p.x = 156;
     p.y = 232;
-    p.health = 200;	// Player health.
+    p.health = 200;
 	p.equipped_weapon = &store_inv[2];
 	
-	/* Bomb variables
-	uint16_t bombx = 0;
-	uint8_t bomby = 0;
-	int bombIsPlaced = 0;
-	int bombBlinker = 0x00;
-	int bombTimer = 3; */
-	
-	uint8_t i;
+	int i;
 	bool infected = false;
 	
 	int old_time, time, one_second;
@@ -162,10 +161,11 @@ int main() {
 		z[i].x = rand() % 310 + 2;
 		z[i].y = rand() % 230 + 2;
 		z[i].target = NULL;
+		z[i].alive = false;
 	}
-	
-	z[0].target = (ChaseableObject *) &p; // The first zombie goes after the player.
     
+	z[0].alive = true;
+
 	time = rtc_Time();
 	
     do { // Game loop
@@ -179,10 +179,10 @@ int main() {
 		/* Black background */
         gfx_FillScreen(COLOR_BLACK);
         
-		drawCustomText(status_string, COLOR_WHITE, 0, 0, 1);
+		draw_custom_text(status_string, COLOR_WHITE, 0, 0, 1);
 
         /* Draw the health bar */
-		gfx_SetColor(COLOR_WHITE);				// White
+		gfx_SetColor(COLOR_WHITE);
 		gfx_Rectangle_NoClip(58, 3, 204, 9);	// Draw the outline of the health bar.
         gfx_SetColor(COLOR_RED);				// Health color red.
 
@@ -198,12 +198,11 @@ int main() {
 					p.health-=4;
 				else
 					p.health = 0;
-				gfx_SetColor(COLOR_GREEN);
 			}
         }
         
-        drawPlayer(p.x, p.y);
-		drawHealthPack(hp_x, hp_y);
+        draw_player(p.x, p.y);
+		draw_health_pack(hp_x, hp_y);
         gfx_SetTextFGColor(COLOR_WHITE);
         gfx_SetTextBGColor(COLOR_BLACK);
         gfx_SetTextTransparentColor(COLOR_BLACK);
@@ -211,19 +210,71 @@ int main() {
 		gfx_SetTextScale(2, 2);
         gfx_PrintInt(points, 3);
 		
-        for (i = zombie_offset; i < zombie_count; i++) {
-			if (z[i].target != NULL) {
-				drawZombie(z[i].x, z[i].y);
+        for (i = zombie_count; i >= 0; i--) {
+			if (z[i].alive) {
+				draw_zombie(z[i].x, z[i].y);
+				if (z[i].target == NULL) {
+					// Zombie chases the player.
+					if (z[i].x < p.x && rand() & 1)
+						z[i].x += 2;
+					if (z[i].x > p.x && rand() & 1)
+						z[i].x -= 2;
+					if (z[i].y < p.y && rand() & 1)
+						z[i].y += 2;
+					if (z[i].y > p.y && rand() & 1)
+						z[i].y -= 2;
+				} else {
 
-				// Zombie movement
-				if (z[i].x < z[i].target->x && rand() & 1)
-					z[i].x += 2;
-				if (z[i].x > z[i].target->x && rand() & 1)
-					z[i].x -= 2;
-				if (z[i].y < z[i].target->y && rand() & 1)
-					z[i].y += 2;
-				if (z[i].y > z[i].target->y && rand() & 1)
-					z[i].y -= 2;
+					// Zombie chases the target.
+					if (z[i].x < z[i].target->x && rand() & 1)
+						z[i].x += 2;
+					if (z[i].x > z[i].target->x && rand() & 1)
+						z[i].x -= 2;
+					if (z[i].y < z[i].target->y && rand() & 1)
+						z[i].y += 2;
+					if (z[i].y > z[i].target->y && rand() & 1)
+						z[i].y -= 2;
+					
+					switch (z[i].target->type) {
+						case TYPE_GRENADE:
+							gfx_SetColor(COLOR_DARK_GREEN);
+							gfx_FillRectangle_NoClip(z[i].target->x, z[i].target->y, 4, 4);
+							draw_custom_int(z[i].target->timer, COLOR_WHITE, z[i].target->x + 4, z[i].target->y - 7, 1);
+							if (one_second && z[i].target->timer > 0) {
+								z[i].target->timer--;
+							}
+							break;
+						case TYPE_LURE:
+							gfx_SetColor(COLOR_DARK_RED);
+							gfx_FillRectangle_NoClip(z[i].target->x, z[i].target->y, 4, 4);
+							draw_custom_int(z[i].target->timer, COLOR_WHITE, z[i].target->x + 4, z[i].target->y - 7, 1);
+							if (one_second && z[i].target->timer > 0) {
+								z[i].target->timer--;
+							}
+							break;
+						case TYPE_C4:
+							gfx_SetColor(COLOR_BEIGE);
+							gfx_FillRectangle_NoClip(z[i].target->x, z[i].target->y, 4, 4);
+							if (can_press && kb_Data[2] & kb_Alpha)
+								z[i].target->timer--;
+							break;
+						case TYPE_LAND_MINE:
+							gfx_SetColor(COLOR_GRAY);
+							gfx_FillRectangle_NoClip(z[i].target->x, z[i].target->y, 4, 4);
+							if ((z[i].target->x < z[i].x + 6) && (z[i].target->x + 6 > z[i].x) && (z[i].target->y < z[i].y + 6) && (6 + z[i].target->y > z[i].y))
+								z[i].target->timer--;
+							break;
+					}
+
+					if (z[i].target->timer <= 0) {
+						if (z[i].target->type == TYPE_GRENADE || z[i].target->type == TYPE_C4 || z[i].target->type == TYPE_LAND_MINE) {
+							zombie_count--;
+							z[i].alive = false;
+						}
+						free(z[i].target);
+						z[i].target = NULL;
+					}
+				}
 
 				// Zombie bounds.
 				if (z[i].x < 2)
@@ -241,68 +292,11 @@ int main() {
 					if (!infected)
 						infected = 1;
 				}
-
-				if (z[i].target != (ChaseableObject *) &p) {
-
-					gfx_FillRectangle_NoClip(z[i].target->x, z[i].target->y, 3, 3);
-					
-					if (one_second && z[i].target->timer > 0) {
-						z[i].target->timer--;
-					}
-				}
-				
-				
-				if (z[i].target->timer <= 0) {
-					free(z[i].target);
-					z[i].target = NULL;
-					zombie_offset = zombie_rand;
-				}
-
 			}
         }
 		
-		/* Bomb blinker/timer & explosion collision
-		if (bombIsPlaced && bombTimer > 0) {
-			gfx_SetColor(COLOR_WHITE);
-			gfx_FillCircle(bombx, bomby, 2);
-			if (one_second == 1) {
-				bombBlinker = (bombBlinker + 1) % 2;
-				bombTimer--;
-			}
-			gfx_SetColor(bombBlinker);
-			gfx_FillRectangle_NoClip(bombx - 1, bomby - 1, 3, 2);
-			
-			xplTime = time;
-		}
-		
-		if (bombTimer == 0) {
-			gfx_SetColor(COLOR_WHITE);
-			for (i = 0; i < 16; i++) {
-				gfx_FillCircle(bombx, bomby, i);
-			}
-			for (i = 0; i < zombie_count; i++) {
-				if ((((z[i].x - bombx) * (z[i].x - bombx)) + ((z[i].y - bomby) * (z[i].y - bomby))) <= 256)
-					z[i].target = 0;
-			}
-			
-			if ((((player.x - bombx) * (player.x - bombx)) + ((player.y - bomby) * (player.y - bomby))) <= 256)
-				player.health -= 50;
-			bombIsPlaced = 0;
-			bombTimer = 3;
-		} */
-		
-		
-		
         if (zombie_spawn_timer == 0 && zombie_count < 0xFF) {
-			/* Zombie recycler
-			i = 0;
-			while(z[i].target != TARGET_NONE) {
-				i++;
-			} */
-			z[zombie_count % 0xFF].x = rand() % 310 + 2; /*use i instead of zombie_count for the zombie recycler */
-			z[zombie_count % 0xFF].y = rand() % 230 + 2;
-			z[zombie_count % 0xFF].target = (ChaseableObject *) &p; // Initial target is the game player
-			//if (i >= zombie_count) /*uncomment this for zombie recycler*/
+			z[zombie_count % 0xFF].alive = true;
 			zombie_count++;
 			
             zombie_spawn_timer = rand() % 2 + 3;
@@ -342,19 +336,97 @@ int main() {
 
 			if (can_press) {
 				if (kb_Data[1] & kb_Mode) {
-					drawStore(can_press);
+					draw_store(can_press);
 					can_press = false;
 				}
 				if (kb_Data[1] & kb_2nd) {
 					switch (p.equipped_weapon->id) {
 						case ID_GRENADE:
-							zombie_rand = rand() % zombie_count + zombie_offset;
-							for (i = zombie_offset; i < zombie_rand; i++) {
-								z[i].target = (ChaseableObject *) malloc(sizeof(ChaseableObject));
-								z[i].target->x = p.x;
-								z[i].target->y = p.y;
-								z[i].target->timer = 5;
+							zombie_rand = rand() % zombie_count;
+							for (i = zombie_rand; i < zombie_count; i++) {
+								if (z[i].target == NULL) {
+									z[i].target = (Target *) malloc(sizeof(Target));
+									z[i].target->type = TYPE_GRENADE;
+									z[i].target->x = p.x;
+									z[i].target->y = p.y;
+									z[i].target->timer = 5;
+									z[i].target->radius = 4;
+								}
 							}
+							break;
+						case ID_C4:
+							zombie_rand = rand() % zombie_count;
+							for (i = zombie_rand; i < zombie_count; i++) {
+								if (z[i].target == NULL) {
+									z[i].target = (Target *) malloc(sizeof(Target));
+									z[i].target->type = TYPE_C4;
+									z[i].target->x = p.x;
+									z[i].target->y = p.y;
+									z[i].target->timer = 5;
+									z[i].target->radius = 7;
+								}
+							}
+							break;
+						case ID_LAND_MINE:
+							zombie_rand = rand() % zombie_count;
+							for (i = zombie_rand; i < zombie_count; i++) {
+								if (z[i].target == NULL) {
+									z[i].target = (Target *) malloc(sizeof(Target));
+									z[i].target->type = TYPE_LAND_MINE;
+									z[i].target->x = p.x;
+									z[i].target->y = p.y;
+									z[i].target->timer = 5;
+									z[i].target->radius = 10;
+								}
+							}
+							break;
+						case ID_THE_BIG_ONE:
+							for (i = 0; i < zombie_count; i++) {
+								z[i].alive = false;
+								z[i].x = rand() % 310 + 2;
+								z[i].y = rand() % 230 + 2;
+							}
+							zombie_spawn_timer = rand() % 5 + 5;
+							break;
+						case ID_SMALL_LURE:
+							zombie_rand = rand() % zombie_count;
+							for (i = zombie_rand; i < zombie_count; i++) {
+								if (z[i].target == NULL) {
+									z[i].target = (Target *) malloc(sizeof(Target));
+									z[i].target->type = TYPE_LURE;
+									z[i].target->x = p.x;
+									z[i].target->y = p.y;
+									z[i].target->timer = 5;
+								}
+							}
+							break;
+						case ID_MEDIUM_LURE:
+							zombie_rand = rand() % zombie_count;
+							for (i = zombie_rand; i < zombie_count; i++) {
+								if (z[i].target == NULL) {
+									z[i].target = (Target *) malloc(sizeof(Target));
+									z[i].target->type = TYPE_LURE;
+									z[i].target->x = p.x;
+									z[i].target->y = p.y;
+									z[i].target->timer = 10;
+								}
+							}
+							break;
+						case ID_LARGE_LURE:
+							zombie_rand = rand() % zombie_count;
+							for (i = zombie_rand; i < zombie_count; i++) {
+								if (z[i].target == NULL) {
+									z[i].target = (Target *) malloc(sizeof(Target));
+									z[i].target->type = TYPE_LURE;
+									z[i].target->x = p.x;
+									z[i].target->y = p.y;
+									z[i].target->timer = 20;
+								}
+							}
+							break;
+						case ID_MACHETE:
+							break;
+						case ID_KATANA:
 							break;
 					}
 					can_press = false;
@@ -409,16 +481,15 @@ int main() {
         /* Check if the player has died. */
         if (p.health <= 0) {
 			p.health = 0;
-            drawFail();
+            draw_fail();
 			if (can_press && kb_Data[1] & kb_Mode) {
 				for (i = 0; i < zombie_count; i++) {
 					z[i].x = 0;
 					z[i].y = 0;
-					z[i].target = (ChaseableObject *) &p;
+					z[i].target = NULL;
 				}
 				z[0].x = rand() % 310 + 2;
 				z[0].y = rand() % 230 + 2;
-				z[0].target = (ChaseableObject *) &p;
 				points = 0;
 				zombie_count = 1;
 				zombie_spawn_timer = rand() % 2 + 3;
@@ -439,25 +510,24 @@ int main() {
         gfx_SwapDraw();
 
     } while (!(can_press && kb_Data[6] & kb_Clear));
-
+	
     gfx_End();
     pgrm_CleanUp();
 	return 0;
 }
 
-void drawPlayer(uint16_t x, uint8_t y) {
+void draw_player(uint16_t x, uint8_t y) {
 	gfx_SetColor(COLOR_WHITE);
-    gfx_FillRectangle_NoClip(x + 1, y, 3, 5);
-    gfx_FillRectangle_NoClip(x, y + 1, 5, 3);
+    gfx_FillCircle_NoClip(x + 2, y + 2, 2);
 }
 
-void drawHealthPack(uint16_t x, uint8_t y) {
+void draw_health_pack(uint16_t x, uint8_t y) {
     gfx_SetColor(COLOR_RED);
     gfx_FillRectangle_NoClip(x + 2, y, 2, 6);
     gfx_FillRectangle_NoClip(x, y + 2, 6, 2);
 }
 
-void drawZombie(uint16_t x, uint8_t y) {
+void draw_zombie(uint16_t x, uint8_t y) {
     gfx_SetColor(COLOR_DARK_GREEN);
 	gfx_FillRectangle_NoClip(x, y, 4, 4);
 	gfx_FillRectangle_NoClip(x + 2, y + 2, 4, 4);
@@ -467,7 +537,7 @@ void drawZombie(uint16_t x, uint8_t y) {
 	gfx_FillRectangle_NoClip(x + rand() % 4, y + rand() % 4, 2, 2);
 }
 
-void drawCustomText(char* text, uint8_t color, int x, int y, int scale) {
+void draw_custom_text(char* text, uint8_t color, int x, int y, int scale) {
 	gfx_SetTextFGColor(color);
     gfx_SetTextBGColor(COLOR_RED);
     gfx_SetTextTransparentColor(COLOR_RED);
@@ -476,26 +546,35 @@ void drawCustomText(char* text, uint8_t color, int x, int y, int scale) {
 	gfx_PrintString(text);
 }
 
-void drawFail() {
-    gfx_ScaledTransparentSprite_NoClip(fail, 73, 76, 6, 6);
-	drawCustomText(fail_string, COLOR_WHITE, 57, 148, 2);
+void draw_custom_int(int i, uint8_t color, int x, int y, int scale) {
+	gfx_SetTextFGColor(color);
+    gfx_SetTextBGColor(COLOR_RED);
+    gfx_SetTextTransparentColor(COLOR_RED);
+    gfx_SetTextXY(x, y);
+	gfx_SetTextScale(scale, scale);
+	gfx_PrintInt(i, 1);
 }
 
-void drawStore(bool can_press) {
+void draw_fail() {
+    gfx_ScaledTransparentSprite_NoClip(fail, 73, 76, 6, 6);
+	draw_custom_text(fail_string, COLOR_WHITE, 57, 148, 2);
+}
+
+void draw_store(bool can_press) {
 
 	int i, i_offset = 0, selected_item = 0;
 	can_press = false;
 	while (!(can_press && (kb_Data[1] & kb_Mode || kb_Data[6] & kb_Clear))) {
 		kb_Scan();
 		gfx_FillScreen(COLOR_BLACK); // Black background
-		drawCustomText("STORE", COLOR_WHITE, 131, 3, 3);
+		draw_custom_text("STORE", COLOR_WHITE, 131, 3, 3);
 		for (i = 0; i < 6; i++)
-			drawCustomText(store_inv[i + i_offset].name, COLOR_WHITE, 20, 55 + i * 24, (i == selected_item ? 3 : 2));
+			draw_custom_text(store_inv[i + i_offset].name, COLOR_WHITE, 20, 55 + i * 24, (i == selected_item ? 3 : 2));
 		
 		gfx_SetColor(COLOR_WHITE);
 		gfx_Rectangle_NoClip(205, 40, 60, 60);
 		gfx_ScaledTransparentSprite_NoClip(store_inv[selected_item + i_offset].icon, 212, 47, 3, 3);
-		//drawCustomText(store_inv[selected_item + i_offset].description, COLOR_WHITE, 150, 105, 1);
+		//draw_custom_text(store_inv[selected_item + i_offset].description, COLOR_WHITE, 150, 105, 1);
 
 		if (can_press) {
 			if (kb_Data[7] & kb_Down) {
@@ -522,5 +601,13 @@ void drawStore(bool can_press) {
 		if (!kb_AnyKey()) can_press = true;
 		
 		gfx_SwapDraw();
+	}
+}
+
+void explode_target(Zombie z) {
+	// Check if zombie is within the radius of the bomb.
+	double distance = sqrt(pow(z.x - z.target->x, 2) + pow(z.y - z.target->y, 2));
+	if (distance < z.target->radius) {
+		z.alive = false;
 	}
 }
