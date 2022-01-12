@@ -12,6 +12,7 @@ extern "C" {
 #include "katana.h"
 #include "grenade.h"
 #include "c4.h"
+#include "land_mine.h"
 
 #ifdef __cplusplus
 }
