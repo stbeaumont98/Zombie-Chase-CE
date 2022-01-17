@@ -25,7 +25,7 @@
 #define COLOR_BEIGE 0x08
 #define COLOR_GRAY 0x09
 
-/* struct Target types */
+/* Target types */
 #define TYPE_GRENADE 0
 #define TYPE_C4 1
 #define TYPE_LAND_MINE 2
@@ -96,7 +96,7 @@ void explode_target(struct Zombie z);
 char fail_string[] = "PRESS [MODE] TO PLAY AGAIN";
 char status_string[] = "";
 
-static struct Item store_inv[16] = {		// struct Items that can be bought in the store.
+static struct Item store_inv[16] = {		// Items that can be bought in the store.
 	{ID_MACHETE, "Machete", "A machete can be swung all around and kill some zombies within its reach.", 20, machete},
 	{ID_KATANA, "Katana", "A katana can also be swung around, but its range is bigger.", 50, katana},
 	{ID_GRENADE, "Grenade", "Grenades explode after an amount of time passes and then kills the zombies lured to it and that's about it.", 15, grenade},
@@ -117,7 +117,7 @@ static struct Item store_inv[16] = {		// struct Items that can be bought in the 
 
 int main() {
 	
-	struct Zombie z[0xFF];					// Up to 255 zombies can be on screen at once.
+	struct Zombie z[0xFF];			// Up to 255 zombies can be on screen at once.
 	
     kb_key_t key;					// Variable to store keypad input.
     uint8_t zombie_spawn_timer;		// Timer for zombies to spawn.
@@ -214,7 +214,7 @@ int main() {
 			if (z[i].alive) {
 				draw_zombie(z[i].x, z[i].y);
 				if (z[i].target == NULL) {
-					// struct Zombie chases the player.
+					// Zombie chases the player.
 					if (z[i].x < p.x && rand() & 1)
 						z[i].x += 2;
 					if (z[i].x > p.x && rand() & 1)
@@ -225,7 +225,7 @@ int main() {
 						z[i].y -= 2;
 				} else {
 
-					// struct Zombie chases the target.
+					// Zombie chases the target.
 					if (z[i].x < z[i].target->x && rand() & 1)
 						z[i].x += 2;
 					if (z[i].x > z[i].target->x && rand() & 1)
@@ -276,7 +276,7 @@ int main() {
 					}
 				}
 
-				// struct Zombie bounds.
+				// Zombie bounds.
 				if (z[i].x < 2)
 					z[i].x = 2;
 				if (z[i].x > 312)
@@ -286,7 +286,7 @@ int main() {
 				if (z[i].y > 232)
 					z[i].y = 232;
 
-				/* struct Zombie/struct Player collisions */
+				/* Zombie/Player collisions */
 				if ((p.x < z[i].x + 6) && (p.x + 6 > z[i].x) && (p.y < z[i].y + 6) && (6 + p.y > z[i].y)) {
 					p.health--;
 					if (!infected)
@@ -436,7 +436,7 @@ int main() {
 
 		if (!kb_AnyKey()) can_press = true;
 
-		// struct Player bounds.
+		// Player bounds.
 		if (p.x < 2)
 			p.x = 2;
 		if (p.x > 312)
