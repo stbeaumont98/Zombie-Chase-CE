@@ -25,7 +25,7 @@
 #define COLOR_BEIGE 0x08
 #define COLOR_GRAY 0x09
 
-/* Target types */
+/* struct Target types */
 #define TYPE_GRENADE 0
 #define TYPE_C4 1
 #define TYPE_LAND_MINE 2
@@ -49,39 +49,39 @@
 #define ID_LIGHTWEIGHT_BOOTS 14	// Lightweight boots make the player move faster but can be damaged by a few bites.
 #define ID_HEAVYWEIGHT_BOOTS 15	// Heavyweight boots make the player move faster and can be damaged by more bites.
 
-typedef struct Item {
+struct Item {
 	uint16_t id;
 	char name[20];
 	char description[0xFF];
 	uint16_t price;
 	gfx_sprite_t *icon;
-} Item;
+};
 
-typedef struct Target {
+struct Target {
 	uint16_t x;
 	uint8_t y;
 	uint8_t timer;
 	uint8_t radius;
 	uint8_t type;
 	bool alive;
-} Target;
+};
 
-typedef struct Player {
+struct Player {
 	uint16_t x;
 	uint8_t y;
 	int health;
-	Item inventory[25];
-	Item *equipped_weapon;
-	Item *equipped_armor;
-	Item *equipped_boots;
-} Player;
+	struct Item inventory[25];
+	struct Item *equipped_weapon;
+	struct Item *equipped_armor;
+	struct Item *equipped_boots;
+};
 
-typedef struct Zombie {
+struct Zombie {
 	uint16_t x;
 	uint8_t y;
-	Target *target;
+	struct Target *target;
 	bool alive;
-} Zombie;
+};
 
 /* Function prototypes */
 void draw_player(uint16_t x, uint8_t y);
@@ -89,14 +89,14 @@ void draw_health_pack(uint16_t x, uint8_t y);
 void draw_zombie(uint16_t x, uint8_t y);
 void draw_custom_text(char* text, uint8_t color, int x, int y, int scale);
 void draw_custom_int(int i, uint8_t color, int x, int y, int scale);
-void draw_fail();
+void draw_fail(void);
 void draw_store(bool can_press);
-void explode_target(Zombie z);
+void explode_target(struct Zombie z);
 
 char fail_string[] = "PRESS [MODE] TO PLAY AGAIN";
 char status_string[] = "";
 
-static Item store_inv[16] = {		// Items that can be bought in the store.
+static struct Item store_inv[16] = {		// struct Items that can be bought in the store.
 	{ID_MACHETE, "Machete", "A machete can be swung all around and kill some zombies within its reach.", 20, machete},
 	{ID_KATANA, "Katana", "A katana can also be swung around, but its range is bigger.", 50, katana},
 	{ID_GRENADE, "Grenade", "Grenades explode after an amount of time passes and then kills the zombies lured to it and that's about it.", 15, grenade},
@@ -117,7 +117,7 @@ static Item store_inv[16] = {		// Items that can be bought in the store.
 
 int main() {
 	
-	Zombie z[0xFF];					// Up to 255 zombies can be on screen at once.
+	struct Zombie z[0xFF];					// Up to 255 zombies can be on screen at once.
 	
     kb_key_t key;					// Variable to store keypad input.
     uint8_t zombie_spawn_timer;		// Timer for zombies to spawn.
@@ -128,7 +128,7 @@ int main() {
     uint16_t points = 0;			// Points obtained by the player.
 
 	/* Define the player */
-	Player p;
+	struct Player p;
     p.x = 156;
     p.y = 232;
     p.health = 200;
@@ -214,7 +214,7 @@ int main() {
 			if (z[i].alive) {
 				draw_zombie(z[i].x, z[i].y);
 				if (z[i].target == NULL) {
-					// Zombie chases the player.
+					// struct Zombie chases the player.
 					if (z[i].x < p.x && rand() & 1)
 						z[i].x += 2;
 					if (z[i].x > p.x && rand() & 1)
@@ -225,7 +225,7 @@ int main() {
 						z[i].y -= 2;
 				} else {
 
-					// Zombie chases the target.
+					// struct Zombie chases the target.
 					if (z[i].x < z[i].target->x && rand() & 1)
 						z[i].x += 2;
 					if (z[i].x > z[i].target->x && rand() & 1)
@@ -276,7 +276,7 @@ int main() {
 					}
 				}
 
-				// Zombie bounds.
+				// struct Zombie bounds.
 				if (z[i].x < 2)
 					z[i].x = 2;
 				if (z[i].x > 312)
@@ -286,7 +286,7 @@ int main() {
 				if (z[i].y > 232)
 					z[i].y = 232;
 
-				/* Zombie/Player collisions */
+				/* struct Zombie/struct Player collisions */
 				if ((p.x < z[i].x + 6) && (p.x + 6 > z[i].x) && (p.y < z[i].y + 6) && (6 + p.y > z[i].y)) {
 					p.health--;
 					if (!infected)
@@ -345,7 +345,7 @@ int main() {
 							zombie_rand = rand() % zombie_count;
 							for (i = zombie_rand; i < zombie_count; i++) {
 								if (z[i].target == NULL) {
-									z[i].target = (Target *) malloc(sizeof(Target));
+									z[i].target = (struct Target *) malloc(sizeof(struct Target));
 									z[i].target->type = TYPE_GRENADE;
 									z[i].target->x = p.x;
 									z[i].target->y = p.y;
@@ -358,7 +358,7 @@ int main() {
 							zombie_rand = rand() % zombie_count;
 							for (i = zombie_rand; i < zombie_count; i++) {
 								if (z[i].target == NULL) {
-									z[i].target = (Target *) malloc(sizeof(Target));
+									z[i].target = (struct Target *) malloc(sizeof(struct Target));
 									z[i].target->type = TYPE_C4;
 									z[i].target->x = p.x;
 									z[i].target->y = p.y;
@@ -371,7 +371,7 @@ int main() {
 							zombie_rand = rand() % zombie_count;
 							for (i = zombie_rand; i < zombie_count; i++) {
 								if (z[i].target == NULL) {
-									z[i].target = (Target *) malloc(sizeof(Target));
+									z[i].target = (struct Target *) malloc(sizeof(struct Target));
 									z[i].target->type = TYPE_LAND_MINE;
 									z[i].target->x = p.x;
 									z[i].target->y = p.y;
@@ -392,7 +392,7 @@ int main() {
 							zombie_rand = rand() % zombie_count;
 							for (i = zombie_rand; i < zombie_count; i++) {
 								if (z[i].target == NULL) {
-									z[i].target = (Target *) malloc(sizeof(Target));
+									z[i].target = (struct Target *) malloc(sizeof(struct Target));
 									z[i].target->type = TYPE_LURE;
 									z[i].target->x = p.x;
 									z[i].target->y = p.y;
@@ -404,7 +404,7 @@ int main() {
 							zombie_rand = rand() % zombie_count;
 							for (i = zombie_rand; i < zombie_count; i++) {
 								if (z[i].target == NULL) {
-									z[i].target = (Target *) malloc(sizeof(Target));
+									z[i].target = (struct Target *) malloc(sizeof(struct Target));
 									z[i].target->type = TYPE_LURE;
 									z[i].target->x = p.x;
 									z[i].target->y = p.y;
@@ -416,7 +416,7 @@ int main() {
 							zombie_rand = rand() % zombie_count;
 							for (i = zombie_rand; i < zombie_count; i++) {
 								if (z[i].target == NULL) {
-									z[i].target = (Target *) malloc(sizeof(Target));
+									z[i].target = (struct Target *) malloc(sizeof(struct Target));
 									z[i].target->type = TYPE_LURE;
 									z[i].target->x = p.x;
 									z[i].target->y = p.y;
@@ -436,7 +436,7 @@ int main() {
 
 		if (!kb_AnyKey()) can_press = true;
 
-		// Player bounds.
+		// struct Player bounds.
 		if (p.x < 2)
 			p.x = 2;
 		if (p.x > 312)
@@ -445,24 +445,6 @@ int main() {
 			p.y = 2;
 		if (p.y > 232)
 			p.y = 232;
-		
-		/* Set bombs
-        key = kb_ScanGroup(1);
-		if ((key & kb_2nd) && (player.health > 0) && (bombIsPlaced == 0)) {
-			
-			
-			
-			zrand = rand() % zombie_count;
-			zbombs = zombie_count - zrand;
-			
-			for (i = zbombs; i < zombie_count; i++) {
-				z[i].target = 2; //new target is bomb
-			}
-			
-			bombIsPlaced = 1;
-			bombx = player.x;
-			bomby = player.y;
-		} */
 
         /* Health pack collisions */
         if ((p.x < hp_x + 6) && (p.x + 5 > hp_x) && (p.y < hp_y + 6) && (5 + p.y > hp_y)) {
@@ -555,7 +537,7 @@ void draw_custom_int(int i, uint8_t color, int x, int y, int scale) {
 	gfx_PrintInt(i, 1);
 }
 
-void draw_fail() {
+void draw_fail(void) {
     gfx_ScaledTransparentSprite_NoClip(fail, 73, 76, 6, 6);
 	draw_custom_text(fail_string, COLOR_WHITE, 57, 148, 2);
 }
@@ -604,7 +586,7 @@ void draw_store(bool can_press) {
 	}
 }
 
-void explode_target(Zombie z) {
+void explode_target(struct Zombie z) {
 	// Check if zombie is within the radius of the bomb.
 	double distance = sqrt(pow(z.x - z.target->x, 2) + pow(z.y - z.target->y, 2));
 	if (distance < z.target->radius) {
