@@ -1,4 +1,4 @@
-unsigned char zombie_palette[32] =
+unsigned char zombie_palette[36] =
 {
     0x00, 0x7c, /*   0: rgb(255,   0,   0) */
     0x27, 0x0e, /*   1: rgb( 25, 138,  58) */
@@ -15,5 +15,7 @@ unsigned char zombie_palette[32] =
     0xca, 0xc9, /*  12: rgb(148, 117,  82) */
     0xb0, 0xea, /*  13: rgb(214, 174, 132) */
     0xf3, 0x6a, /*  14: rgb(214, 186, 156) */
-    0x64, 0xf4, /*  15: rgb(239,  28,  33) */
+    0xc8, 0xf0, /*  15: rgb(230,  53,  66) */
+    0x64, 0xf4, /*  16: rgb(239,  28,  33) */
+    0x51, 0x76, /*  17: rgb(239, 146, 140) */
 };

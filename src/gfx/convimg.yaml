@@ -16,12 +16,15 @@ converts:
   - name: zombie_sprites
     palette: zombie_palette
     images:
+      - title.png
       - fail.png
       - machete.png
       - katana.png
       - grenade.png
       - c4.png
       - land_mine.png
+      - the_big_one.png
+      - t_bone.png
 
 outputs:
   - type: c
