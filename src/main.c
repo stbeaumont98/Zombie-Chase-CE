@@ -91,7 +91,7 @@ void draw_custom_text(char* text, uint8_t color, int x, int y, int scale);
 void draw_custom_int(int i, uint8_t color, int x, int y, int scale);
 void draw_fail(void);
 void draw_store(bool can_press);
-void explode_target(struct Zombie z);
+bool is_in_radius(struct Target *t, struct Zombie z);
 
 char fail_string[] = "PRESS [MODE] TO PLAY AGAIN";
 char status_string[] = "";
@@ -132,7 +132,7 @@ int main() {
     p.x = 156;
     p.y = 232;
     p.health = 200;
-	p.equipped_weapon = &store_inv[2];
+	p.equipped_weapon = &store_inv[3];
 	
 	int i;
 	bool infected = false;
@@ -195,7 +195,7 @@ int main() {
 
 			if (infected && one_second) {
 				if (p.health >= 4)
-					p.health-=4;
+					p.health -= 4;
 				else
 					p.health = 0;
 			}
@@ -203,12 +203,8 @@ int main() {
         
         draw_player(p.x, p.y);
 		draw_health_pack(hp_x, hp_y);
-        gfx_SetTextFGColor(COLOR_WHITE);
-        gfx_SetTextBGColor(COLOR_BLACK);
-        gfx_SetTextTransparentColor(COLOR_BLACK);
-        gfx_SetTextXY(2, 226);
-		gfx_SetTextScale(2, 2);
-        gfx_PrintInt(points, 3);
+        draw_custom_text("$", COLOR_WHITE, 2, 226, 2);
+		draw_custom_int(points, COLOR_WHITE, 10, 225, 2);
 		
         for (i = zombie_count; i >= 0; i--) {
 			if (z[i].alive) {
@@ -224,7 +220,6 @@ int main() {
 					if (z[i].y > p.y && rand() & 1)
 						z[i].y -= 2;
 				} else {
-
 					// Zombie chases the target.
 					if (z[i].x < z[i].target->x && rand() & 1)
 						z[i].x += 2;
@@ -255,6 +250,7 @@ int main() {
 						case TYPE_C4:
 							gfx_SetColor(COLOR_BEIGE);
 							gfx_FillRectangle_NoClip(z[i].target->x, z[i].target->y, 4, 4);
+							draw_custom_text("[2nd]", COLOR_WHITE, z[i].target->x, z[i].target->y - 7, 1);
 							if (can_press && kb_Data[2] & kb_Alpha)
 								z[i].target->timer--;
 							break;
@@ -350,7 +346,7 @@ int main() {
 									z[i].target->x = p.x;
 									z[i].target->y = p.y;
 									z[i].target->timer = 5;
-									z[i].target->radius = 4;
+									z[i].target->radius = 15;
 								}
 							}
 							break;
@@ -363,7 +359,7 @@ int main() {
 									z[i].target->x = p.x;
 									z[i].target->y = p.y;
 									z[i].target->timer = 5;
-									z[i].target->radius = 7;
+									z[i].target->radius = 30;
 								}
 							}
 							break;
@@ -376,7 +372,7 @@ int main() {
 									z[i].target->x = p.x;
 									z[i].target->y = p.y;
 									z[i].target->timer = 5;
-									z[i].target->radius = 10;
+									z[i].target->radius = 60;
 								}
 							}
 							break;
@@ -556,6 +552,8 @@ void draw_store(bool can_press) {
 		gfx_SetColor(COLOR_WHITE);
 		gfx_Rectangle_NoClip(205, 40, 60, 60);
 		gfx_ScaledTransparentSprite_NoClip(store_inv[selected_item + i_offset].icon, 212, 47, 3, 3);
+		draw_custom_text("$", COLOR_WHITE, 205, 120, 2);
+		draw_custom_int(store_inv[selected_item + i_offset].price, COLOR_WHITE, 213, 119, 2);
 		//draw_custom_text(store_inv[selected_item + i_offset].description, COLOR_WHITE, 150, 105, 1);
 
 		if (can_press) {
@@ -586,10 +584,7 @@ void draw_store(bool can_press) {
 	}
 }
 
-void explode_target(struct Zombie z) {
-	// Check if zombie is within the radius of the bomb.
-	double distance = sqrt(pow(z.x - z.target->x, 2) + pow(z.y - z.target->y, 2));
-	if (distance < z.target->radius) {
-		z.alive = false;
-	}
+bool is_in_radius(struct Target *t, struct Zombie z) {
+	int distance = sqrt(pow(t->x - z.x, 2) + pow(t->y - z.y, 2));
+	return distance <= t->radius;
 }
