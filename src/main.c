@@ -38,7 +38,7 @@
 #define ID_C4 3					// C4 explodes at the players command and kills the zombies lured to it and zombies within a medium-sized radius.
 #define ID_LAND_MINE 4			// Land mines explode on contact killing anything within its medium-sized blast radius.
 #define ID_THE_BIG_ONE 5		// The big one kills all the zombies currently on the screen.
-#define ID_SMALL_LURE 6			// Lures some zombies so the player may have some time to collect more things.
+#define ID_TBONE_STEAK 6			// Lures some zombies so the player may have some time to collect more things.
 #define ID_MEDIUM_LURE 7		// Lures more zombies than the small lure for a longer time period.
 #define ID_LARGE_LURE 8			// Lures more zombies than both the small and medium lures for an even longer time period.
 #define ID_CARDBOARD_ARMOR 9	// Cardboard armor protects the player from a few bites but falls apart quickly.
@@ -103,7 +103,7 @@ static struct Item store_inv[16] = {		// Items that can be bought in the store.
 	{ID_C4, "C4", "C4 explodes at the players command and kills the zombies lured to it and zombies within a medium-sized radius.", 25, c4},
 	{ID_LAND_MINE, "Land Mine", "Land mines explode on contact killing anything within its medium-sized blast radius.", 40, land_mine},
 	{ID_THE_BIG_ONE, "The Big One", "The big one kills all the zombies currently on the screen.", 1000, the_big_one},
-	{ID_SMALL_LURE, "T-Bone Steak", "Lures some zombies so the player may have some time to collect more things.", 20, t_bone},
+	{ID_TBONE_STEAK, "T-Bone Steak", "Lures some zombies so the player may have some time to collect more things.", 20, t_bone},
 	{ID_MEDIUM_LURE, "Medium Lure", "Lures more zombies than the small lure for a longer time period.", 50, NULL},
 	{ID_LARGE_LURE, "Large Lure", "Lures more zombies than both the small and medium lures for an even longer time period.", 100, NULL},
 	{ID_CARDBOARD_ARMOR, "Cardboard Armor", "Cardboard armor protects the player from a few bites but falls apart quickly.", 20, NULL},
@@ -125,7 +125,8 @@ int main() {
     uint8_t hp_y;
 	uint8_t zombie_rand = 0;
     uint8_t zombie_count = 1;		// Number of zombies currently spawned.
-    uint16_t points = 0;			// Points obtained by the player.
+    uint16_t money = 0;				// Money obtained by the player.
+	uint16_t points = 0;			// Points obtained by the player.
 
 	/* Define the player */
 	struct Player p;
@@ -203,8 +204,10 @@ int main() {
         
         draw_player(p.x, p.y);
 		draw_health_pack(hp_x, hp_y);
-        draw_custom_text("$", COLOR_WHITE, 2, 226, 2);
-		draw_custom_int(points, COLOR_WHITE, 10, 225, 2);
+		/* Draw the players money */
+        draw_custom_text("$", COLOR_WHITE, 2, 2, 2);
+		draw_custom_int(money, COLOR_WHITE, 10, 1, 2);
+		draw_custom_int(points, COLOR_WHITE, 2, 226, 2);
 		
         for (i = zombie_count; i >= 0; i--) {
 			if (z[i].alive) {
@@ -384,7 +387,7 @@ int main() {
 							}
 							zombie_spawn_timer = rand() % 5 + 5;
 							break;
-						case ID_SMALL_LURE:
+						case ID_TBONE_STEAK:
 							zombie_rand = rand() % zombie_count;
 							for (i = zombie_rand; i < zombie_count; i++) {
 								if (z[i].target == NULL) {
@@ -450,7 +453,7 @@ int main() {
 				p.health += 5;
 			hp_x = rand() % 310 + 2;
 			hp_y = rand() % 230 + 2;
-			points++;
+			money++;
         }
 
 		if (p.health > 200)
@@ -468,7 +471,7 @@ int main() {
 				}
 				z[0].x = rand() % 310 + 2;
 				z[0].y = rand() % 230 + 2;
-				points = 0;
+				money = 0;
 				zombie_count = 1;
 				zombie_spawn_timer = rand() % 2 + 3;
 				p.x = 156;
@@ -479,7 +482,11 @@ int main() {
 				infected = false;
 				can_press = false;
             }
-        }
+        } else {
+			// Add points for how long the player has survived.
+			if (one_second)
+				points++;
+		}
         
 		// Decrement the zombie spawner every second.
 		if (one_second)
