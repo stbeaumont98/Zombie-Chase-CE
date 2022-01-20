@@ -63,7 +63,6 @@ struct Target {
 	uint8_t timer;
 	uint8_t radius;
 	uint8_t type;
-	bool alive;
 };
 
 struct Player {
@@ -91,7 +90,7 @@ void draw_custom_text(char* text, uint8_t color, int x, int y, int scale);
 void draw_custom_int(int i, uint8_t color, int x, int y, int scale);
 void draw_fail(void);
 void draw_store(bool can_press);
-bool is_in_radius(struct Target *t, struct Zombie z);
+bool is_in_radius(struct Zombie z);
 
 char fail_string[] = "PRESS [MODE] TO PLAY AGAIN";
 char status_string[] = "";
@@ -118,12 +117,14 @@ static struct Item store_inv[16] = {		// Items that can be bought in the store.
 int main() {
 	
 	struct Zombie z[0xFF];			// Up to 255 zombies can be on screen at once.
+	struct Target *objects[16];		// Up to 16 objects can be on screen at once.
+
+	uint8_t obj_count = 0;			// The number of objects currently on screen.
 	
     kb_key_t key;					// Variable to store keypad input.
     uint8_t zombie_spawn_timer;		// Timer for zombies to spawn.
     uint16_t hp_x;					// Health pack x and y.
     uint8_t hp_y;
-	uint8_t zombie_rand = 0;
     uint8_t zombie_count = 1;		// Number of zombies currently spawned.
     uint16_t money = 0;				// Money obtained by the player.
 	uint16_t points = 0;			// Points obtained by the player.
@@ -133,9 +134,9 @@ int main() {
     p.x = 156;
     p.y = 232;
     p.health = 200;
-	p.equipped_weapon = &store_inv[3];
+	p.equipped_weapon = &store_inv[2];
 	
-	int i;
+	int i, j;
 	bool infected = false;
 	
 	int old_time, time, one_second;
@@ -163,6 +164,10 @@ int main() {
 		z[i].y = rand() % 230 + 2;
 		z[i].target = NULL;
 		z[i].alive = false;
+	}
+
+	for (i = 0; i < 16; i++) {
+		objects[i] = NULL;
 	}
     
 	z[0].alive = true;
@@ -222,6 +227,7 @@ int main() {
 						z[i].y += 2;
 					if (z[i].y > p.y && rand() & 1)
 						z[i].y -= 2;
+					
 				} else {
 					// Zombie chases the target.
 					if (z[i].x < z[i].target->x && rand() & 1)
@@ -232,45 +238,18 @@ int main() {
 						z[i].y += 2;
 					if (z[i].y > z[i].target->y && rand() & 1)
 						z[i].y -= 2;
-					
-					switch (z[i].target->type) {
-						case TYPE_GRENADE:
-							gfx_SetColor(COLOR_DARK_GREEN);
-							gfx_FillRectangle_NoClip(z[i].target->x, z[i].target->y, 4, 4);
-							draw_custom_int(z[i].target->timer, COLOR_WHITE, z[i].target->x + 4, z[i].target->y - 7, 1);
-							if (one_second && z[i].target->timer > 0) {
-								z[i].target->timer--;
-							}
-							break;
-						case TYPE_LURE:
-							gfx_SetColor(COLOR_DARK_RED);
-							gfx_FillRectangle_NoClip(z[i].target->x, z[i].target->y, 4, 4);
-							draw_custom_int(z[i].target->timer, COLOR_WHITE, z[i].target->x + 4, z[i].target->y - 7, 1);
-							if (one_second && z[i].target->timer > 0) {
-								z[i].target->timer--;
-							}
-							break;
-						case TYPE_C4:
-							gfx_SetColor(COLOR_BEIGE);
-							gfx_FillRectangle_NoClip(z[i].target->x, z[i].target->y, 4, 4);
-							draw_custom_text("[2nd]", COLOR_WHITE, z[i].target->x, z[i].target->y - 7, 1);
-							if (can_press && kb_Data[2] & kb_Alpha)
-								z[i].target->timer--;
-							break;
-						case TYPE_LAND_MINE:
-							gfx_SetColor(COLOR_GRAY);
-							gfx_FillRectangle_NoClip(z[i].target->x, z[i].target->y, 4, 4);
-							if ((z[i].target->x < z[i].x + 6) && (z[i].target->x + 6 > z[i].x) && (z[i].target->y < z[i].y + 6) && (6 + z[i].target->y > z[i].y))
-								z[i].target->timer--;
-							break;
-					}
 
 					if (z[i].target->timer <= 0) {
 						if (z[i].target->type == TYPE_GRENADE || z[i].target->type == TYPE_C4 || z[i].target->type == TYPE_LAND_MINE) {
-							zombie_count--;
-							z[i].alive = false;
+							gfx_SetColor(COLOR_WHITE);
+							for (j = 5; j >= 1; j--) {
+								gfx_FillCircle(z[i].target->x, z[i].target->y, z[i].target->radius / j);
+							}
+							if (is_in_radius(z[i])) {
+								z[i].alive = false;
+								zombie_count--;
+							}
 						}
-						free(z[i].target);
 						z[i].target = NULL;
 					}
 				}
@@ -293,6 +272,58 @@ int main() {
 				}
 			}
         }
+
+		for (i = 0; i < obj_count; i++) {
+			if (objects[i] != NULL) {
+				if (objects[i]->timer > 0) {
+					switch (objects[i]->type) {
+						case TYPE_GRENADE:
+							gfx_SetColor(COLOR_DARK_GREEN);
+							gfx_FillRectangle_NoClip(objects[i]->x, objects[i]->y, 4, 4);
+							draw_custom_int(objects[i]->timer, COLOR_WHITE, objects[i]->x + 4, objects[i]->y - 7, 1);
+							if (one_second && objects[i]->timer > 0) {
+								objects[i]->timer--;
+							}
+							if (objects[i]->timer <= 0) {
+								free(objects[i]);
+								objects[i] = NULL;
+							}
+							break;
+						case TYPE_LURE:
+							gfx_SetColor(COLOR_DARK_RED);
+							gfx_FillRectangle_NoClip(objects[i]->x, objects[i]->y, 4, 4);
+							draw_custom_int(objects[i]->timer, COLOR_WHITE, objects[i]->x + 4, objects[i]->y - 7, 1);
+							if (one_second && objects[i]->timer > 0) {
+								objects[i]->timer--;
+							}
+							break;
+						case TYPE_C4:
+							gfx_SetColor(COLOR_BEIGE);
+							gfx_FillRectangle_NoClip(objects[i]->x, objects[i]->y, 4, 4);
+							draw_custom_text("[2nd]", COLOR_WHITE, objects[i]->x, objects[i]->y - 7, 1);
+							if (can_press && kb_Data[2] & kb_Alpha)
+								objects[i]->timer--;
+							break;
+						case TYPE_LAND_MINE:
+							gfx_SetColor(COLOR_GRAY);
+							gfx_FillRectangle_NoClip(objects[i]->x, objects[i]->y, 4, 4);
+							if ((objects[i]->x < z[i].x + 6) && (objects[i]->x + 6 > z[i].x) && (objects[i]->y < z[i].y + 6) && (6 + objects[i]->y > z[i].y))
+								objects[i]->timer--;
+							break;
+					}
+				}
+				if (objects[i]->timer <= 0) {
+					free(objects[i]);
+					if (obj_count == 1)
+						objects[i] = NULL;
+					else {
+						objects[i] = objects[obj_count - 1];
+						objects[obj_count - 1] = NULL;
+					}
+					obj_count--;
+				}
+			}
+		}
 		
         if (zombie_spawn_timer == 0 && zombie_count < 0xFF) {
 			z[zombie_count % 0xFF].alive = true;
@@ -341,41 +372,50 @@ int main() {
 				if (kb_Data[1] & kb_2nd) {
 					switch (p.equipped_weapon->id) {
 						case ID_GRENADE:
-							zombie_rand = rand() % zombie_count;
-							for (i = zombie_rand; i < zombie_count; i++) {
-								if (z[i].target == NULL) {
-									z[i].target = (struct Target *) malloc(sizeof(struct Target));
-									z[i].target->type = TYPE_GRENADE;
-									z[i].target->x = p.x;
-									z[i].target->y = p.y;
-									z[i].target->timer = 5;
-									z[i].target->radius = 15;
+							if (objects[obj_count] == NULL) {
+								objects[obj_count] = (struct Target *) malloc(sizeof(struct Target));
+								objects[obj_count]->type = TYPE_GRENADE;
+								objects[obj_count]->x = p.x;
+								objects[obj_count]->y = p.y;
+								objects[obj_count]->timer = 5;
+								objects[obj_count]->radius = 15;
+
+								for (i = rand() % zombie_count; i < zombie_count; i++) {
+									if (z[i].target == NULL) {
+										z[i].target = objects[obj_count];
+									}
 								}
 							}
 							break;
 						case ID_C4:
-							zombie_rand = rand() % zombie_count;
-							for (i = zombie_rand; i < zombie_count; i++) {
-								if (z[i].target == NULL) {
-									z[i].target = (struct Target *) malloc(sizeof(struct Target));
-									z[i].target->type = TYPE_C4;
-									z[i].target->x = p.x;
-									z[i].target->y = p.y;
-									z[i].target->timer = 5;
-									z[i].target->radius = 30;
+							if (objects[obj_count] == NULL) {
+								objects[obj_count] = (struct Target *) malloc(sizeof(struct Target));
+								objects[obj_count]->type = TYPE_C4;
+								objects[obj_count]->x = p.x;
+								objects[obj_count]->y = p.y;
+								objects[obj_count]->timer = 1;
+								objects[obj_count]->radius = 30;
+
+								for (i = rand() % zombie_count; i < zombie_count; i++) {
+									if (z[i].target == NULL) {
+										z[i].target = objects[obj_count];
+									}
 								}
 							}
 							break;
 						case ID_LAND_MINE:
-							zombie_rand = rand() % zombie_count;
-							for (i = zombie_rand; i < zombie_count; i++) {
-								if (z[i].target == NULL) {
-									z[i].target = (struct Target *) malloc(sizeof(struct Target));
-									z[i].target->type = TYPE_LAND_MINE;
-									z[i].target->x = p.x;
-									z[i].target->y = p.y;
-									z[i].target->timer = 5;
-									z[i].target->radius = 60;
+							if (objects[obj_count] == NULL) {
+								objects[obj_count] = (struct Target *) malloc(sizeof(struct Target));
+								objects[obj_count]->type = TYPE_LAND_MINE;
+								objects[obj_count]->x = p.x;
+								objects[obj_count]->y = p.y;
+								objects[obj_count]->timer = 1;
+								objects[obj_count]->radius = 60;
+
+								for (i = rand() % zombie_count; i < zombie_count; i++) {
+									if (z[i].target == NULL) {
+										z[i].target = objects[obj_count];
+									}
 								}
 							}
 							break;
@@ -388,38 +428,50 @@ int main() {
 							zombie_spawn_timer = rand() % 5 + 5;
 							break;
 						case ID_TBONE_STEAK:
-							zombie_rand = rand() % zombie_count;
-							for (i = zombie_rand; i < zombie_count; i++) {
-								if (z[i].target == NULL) {
-									z[i].target = (struct Target *) malloc(sizeof(struct Target));
-									z[i].target->type = TYPE_LURE;
-									z[i].target->x = p.x;
-									z[i].target->y = p.y;
-									z[i].target->timer = 5;
+							if (objects[obj_count] == NULL) {
+								objects[obj_count] = (struct Target *) malloc(sizeof(struct Target));
+								objects[obj_count]->type = TYPE_LURE;
+								objects[obj_count]->x = p.x;
+								objects[obj_count]->y = p.y;
+								objects[obj_count]->timer = 5;
+								objects[obj_count]->radius = 15;
+
+								for (i = rand() % zombie_count; i < zombie_count; i++) {
+									if (z[i].target == NULL) {
+										z[i].target = objects[obj_count];
+									}
 								}
 							}
 							break;
 						case ID_MEDIUM_LURE:
-							zombie_rand = rand() % zombie_count;
-							for (i = zombie_rand; i < zombie_count; i++) {
-								if (z[i].target == NULL) {
-									z[i].target = (struct Target *) malloc(sizeof(struct Target));
-									z[i].target->type = TYPE_LURE;
-									z[i].target->x = p.x;
-									z[i].target->y = p.y;
-									z[i].target->timer = 10;
+							if (objects[obj_count] == NULL) {
+								objects[obj_count] = (struct Target *) malloc(sizeof(struct Target));
+								objects[obj_count]->type = TYPE_LURE;
+								objects[obj_count]->x = p.x;
+								objects[obj_count]->y = p.y;
+								objects[obj_count]->timer = 10;
+								objects[obj_count]->radius = 20;
+
+								for (i = rand() % zombie_count; i < zombie_count; i++) {
+									if (z[i].target == NULL) {
+										z[i].target = objects[obj_count];
+									}
 								}
 							}
 							break;
 						case ID_LARGE_LURE:
-							zombie_rand = rand() % zombie_count;
-							for (i = zombie_rand; i < zombie_count; i++) {
-								if (z[i].target == NULL) {
-									z[i].target = (struct Target *) malloc(sizeof(struct Target));
-									z[i].target->type = TYPE_LURE;
-									z[i].target->x = p.x;
-									z[i].target->y = p.y;
-									z[i].target->timer = 20;
+							if (objects[obj_count] == NULL) {
+								objects[obj_count] = (struct Target *) malloc(sizeof(struct Target));
+								objects[obj_count]->type = TYPE_GRENADE;
+								objects[obj_count]->x = p.x;
+								objects[obj_count]->y = p.y;
+								objects[obj_count]->timer = 20;
+								objects[obj_count]->radius = 25;
+
+								for (i = rand() % zombie_count; i < zombie_count; i++) {
+									if (z[i].target == NULL) {
+										z[i].target = objects[obj_count];
+									}
 								}
 							}
 							break;
@@ -428,6 +480,11 @@ int main() {
 						case ID_KATANA:
 							break;
 					}
+					
+					obj_count++;
+
+					if (obj_count > 15)
+						obj_count = 15;
 					can_press = false;
 				}
 			}
@@ -472,6 +529,7 @@ int main() {
 				z[0].x = rand() % 310 + 2;
 				z[0].y = rand() % 230 + 2;
 				money = 0;
+				points = 0;
 				zombie_count = 1;
 				zombie_spawn_timer = rand() % 2 + 3;
 				p.x = 156;
@@ -591,7 +649,7 @@ void draw_store(bool can_press) {
 	}
 }
 
-bool is_in_radius(struct Target *t, struct Zombie z) {
-	int distance = sqrt(pow(t->x - z.x, 2) + pow(t->y - z.y, 2));
-	return distance <= t->radius;
+bool is_in_radius(struct Zombie z) {
+	int distance = sqrt(pow(z.target->x - z.x, 2) + pow(z.target->y - z.y, 2));
+	return distance <= z.target->radius;
 }
