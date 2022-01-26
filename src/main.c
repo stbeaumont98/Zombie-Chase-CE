@@ -242,12 +242,12 @@ int main() {
 					if (z[i].target->timer <= 0) {
 						if (z[i].target->type == TYPE_GRENADE || z[i].target->type == TYPE_C4 || z[i].target->type == TYPE_LAND_MINE) {
 							gfx_SetColor(COLOR_WHITE);
-							for (j = 5; j >= 1; j--) {
+							for (j = 20; j >= 1; j--) {
 								gfx_FillCircle(z[i].target->x, z[i].target->y, z[i].target->radius / j);
 							}
 							if (is_in_radius(z[i])) {
-								z[i].alive = false;
-								zombie_count--;
+								z[i] = z[--zombie_count];
+								z[zombie_count].alive = false;
 							}
 						}
 						z[i].target = NULL;
@@ -528,8 +528,7 @@ int main() {
 				}
 				z[0].x = rand() % 310 + 2;
 				z[0].y = rand() % 230 + 2;
-				money = 0;
-				points = 0;
+				money = points = 0;
 				zombie_count = 1;
 				zombie_spawn_timer = rand() % 2 + 3;
 				p.x = 156;
