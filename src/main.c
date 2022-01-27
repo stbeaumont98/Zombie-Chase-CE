@@ -87,7 +87,7 @@ void draw_player(uint16_t x, uint8_t y);
 void draw_health_pack(uint16_t x, uint8_t y);
 void draw_zombie(uint16_t x, uint8_t y);
 void draw_custom_text(char* text, uint8_t color, int x, int y, int scale);
-void draw_custom_int(int i, uint8_t color, int x, int y, int scale);
+void draw_custom_int(int i, uint8_t length, uint8_t color, int x, int y, int scale);
 void draw_fail(void);
 void draw_store(bool can_press);
 bool is_in_radius(struct Zombie z);
@@ -211,8 +211,10 @@ int main() {
 		draw_health_pack(hp_x, hp_y);
 		/* Draw the players money */
         draw_custom_text("$", COLOR_WHITE, 2, 2, 2);
-		draw_custom_int(money, COLOR_WHITE, 10, 1, 2);
-		draw_custom_int(points, COLOR_WHITE, 2, 226, 2);
+		draw_custom_int(money, 1, COLOR_WHITE, 10, 1, 2);
+		draw_custom_int(points / 60, 2, COLOR_WHITE, 2, 226, 2);
+		draw_custom_text(":", COLOR_WHITE, 18, 226, 2);
+		draw_custom_int(points % 60, 2, COLOR_WHITE, 22, 226, 2);
 		
         for (i = zombie_count; i >= 0; i--) {
 			if (z[i].alive) {
@@ -280,7 +282,7 @@ int main() {
 						case TYPE_GRENADE:
 							gfx_SetColor(COLOR_DARK_GREEN);
 							gfx_FillRectangle_NoClip(objects[i]->x, objects[i]->y, 4, 4);
-							draw_custom_int(objects[i]->timer, COLOR_WHITE, objects[i]->x + 4, objects[i]->y - 7, 1);
+							draw_custom_int(objects[i]->timer, 1, COLOR_WHITE, objects[i]->x + 4, objects[i]->y - 7, 1);
 							if (one_second && objects[i]->timer > 0) {
 								objects[i]->timer--;
 							}
@@ -292,7 +294,7 @@ int main() {
 						case TYPE_LURE:
 							gfx_SetColor(COLOR_DARK_RED);
 							gfx_FillRectangle_NoClip(objects[i]->x, objects[i]->y, 4, 4);
-							draw_custom_int(objects[i]->timer, COLOR_WHITE, objects[i]->x + 4, objects[i]->y - 7, 1);
+							draw_custom_int(objects[i]->timer, 1, COLOR_WHITE, objects[i]->x + 4, objects[i]->y - 7, 1);
 							if (one_second && objects[i]->timer > 0) {
 								objects[i]->timer--;
 							}
@@ -588,13 +590,13 @@ void draw_custom_text(char* text, uint8_t color, int x, int y, int scale) {
 	gfx_PrintString(text);
 }
 
-void draw_custom_int(int i, uint8_t color, int x, int y, int scale) {
+void draw_custom_int(int i, uint8_t length, uint8_t color, int x, int y, int scale) {
 	gfx_SetTextFGColor(color);
     gfx_SetTextBGColor(COLOR_RED);
     gfx_SetTextTransparentColor(COLOR_RED);
     gfx_SetTextXY(x, y);
 	gfx_SetTextScale(scale, scale);
-	gfx_PrintInt(i, 1);
+	gfx_PrintInt(i, length);
 }
 
 void draw_fail(void) {
@@ -617,7 +619,7 @@ void draw_store(bool can_press) {
 		gfx_Rectangle_NoClip(205, 40, 60, 60);
 		gfx_ScaledTransparentSprite_NoClip(store_inv[selected_item + i_offset].icon, 212, 47, 3, 3);
 		draw_custom_text("$", COLOR_WHITE, 205, 120, 2);
-		draw_custom_int(store_inv[selected_item + i_offset].price, COLOR_WHITE, 213, 119, 2);
+		draw_custom_int(store_inv[selected_item + i_offset].price, 1, COLOR_WHITE, 213, 119, 2);
 		//draw_custom_text(store_inv[selected_item + i_offset].description, COLOR_WHITE, 150, 105, 1);
 
 		if (can_press) {
