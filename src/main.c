@@ -103,16 +103,18 @@ static struct Item store_inv[16] = {		// Items that can be bought in the store.
 	{ID_LAND_MINE, "Land Mine", "Land mines explode on contact killing anything within its medium-sized blast radius.", 40, land_mine},
 	{ID_THE_BIG_ONE, "The Big One", "The big one kills all the zombies currently on the screen.", 1000, the_big_one},
 	{ID_TBONE_STEAK, "T-Bone Steak", "Lures some zombies so the player may have some time to collect more things.", 20, t_bone},
-	{ID_MEDIUM_LURE, "Medium Lure", "Lures more zombies than the small lure for a longer time period.", 50, NULL},
-	{ID_LARGE_LURE, "Large Lure", "Lures more zombies than both the small and medium lures for an even longer time period.", 100, NULL},
-	{ID_CARDBOARD_ARMOR, "Cardboard Armor", "Cardboard armor protects the player from a few bites but falls apart quickly.", 20, NULL},
-	{ID_PLASTIC_ARMOR, "Plastic Armor", "Plastic armor can take a bit more damage than cardboard armor.", 50, NULL},
-	{ID_STEEL_ARMOR, "Steel Armor", "Steel armor protects the player from more bites but slows the player down.", 100, NULL},
-	{ID_FORCEFIELD_ARMOR, "Forcefield Armor", "Forcefield armor protects the player from all bites for 15 seconds.", 100, NULL},
-	{ID_CAMOUFLAGE_ARMOR, "Camouflage Armor", "Camouflage armor makes the player invisible to zombies for a period of time.", 100, NULL},
-	{ID_LIGHTWEIGHT_BOOTS, "Lightweight Boots", "Lightweight boots make the player move faster but can be damaged by a few bites.", 20, NULL},
-	{ID_HEAVYWEIGHT_BOOTS, "Heavyweight Boots", "Heavyweight boots make the player move faster and can be damaged by more bites.", 50, NULL},
+	{ID_MEDIUM_LURE, "Medium Lure", "Lures more zombies than the small lure for a longer time period.", 50, unknown},
+	{ID_LARGE_LURE, "Large Lure", "Lures more zombies than both the small and medium lures for an even longer time period.", 100, unknown},
+	{ID_CARDBOARD_ARMOR, "Cardboard Armor", "Cardboard armor protects the player from a few bites but falls apart quickly.", 20, unknown},
+	{ID_PLASTIC_ARMOR, "Plastic Armor", "Plastic armor can take a bit more damage than cardboard armor.", 50, unknown},
+	{ID_STEEL_ARMOR, "Steel Armor", "Steel armor protects the player from more bites but slows the player down.", 100, unknown},
+	{ID_FORCEFIELD_ARMOR, "Forcefield Armor", "Forcefield armor protects the player from all bites for 15 seconds.", 100, unknown},
+	{ID_CAMOUFLAGE_ARMOR, "Camo Armor", "Camouflage armor makes the player invisible to zombies for a period of time.", 100, unknown},
+	{ID_LIGHTWEIGHT_BOOTS, "Lightweight Boots", "Lightweight boots make the player move faster but can be damaged by a few bites.", 20, unknown},
+	{ID_HEAVYWEIGHT_BOOTS, "Heavyweight Boots", "Heavyweight boots make the player move faster and can be damaged by more bites.", 50, unknown},
 };
+
+uint16_t money = 0;					// Money obtained by the player.
 
 int main() {
 	
@@ -126,7 +128,6 @@ int main() {
     uint16_t hp_x;					// Health pack x and y.
     uint8_t hp_y;
     uint8_t zombie_count = 1;		// Number of zombies currently spawned.
-    uint16_t money = 0;				// Money obtained by the player.
 	uint16_t points = 0;			// Points obtained by the player.
 
 	/* Define the player */
@@ -606,28 +607,46 @@ void draw_fail(void) {
 
 void draw_store(bool can_press) {
 
-	int i, i_offset = 0, selected_item = 0;
+	int i, i_offset = 0, selected_item = 0, quantity = 1;
 	can_press = false;
 	while (!(can_press && (kb_Data[1] & kb_Mode || kb_Data[6] & kb_Clear))) {
 		kb_Scan();
+
 		gfx_FillScreen(COLOR_BLACK); // Black background
-		draw_custom_text("STORE", COLOR_WHITE, 131, 3, 3);
+		draw_custom_text("$", COLOR_WHITE, 10, 3, 4);
+		draw_custom_int(money, 1, COLOR_WHITE, 26, 2, 4);
+		draw_custom_text("STORE", COLOR_WHITE, 229, 3, 4);
+		gfx_SetColor(COLOR_WHITE);
+		gfx_FillRectangle_NoClip(0, 30, 320, 3);
 		for (i = 0; i < 6; i++)
-			draw_custom_text(store_inv[i + i_offset].name, COLOR_WHITE, 20, 55 + i * 24, (i == selected_item ? 3 : 2));
+			draw_custom_text(store_inv[i + i_offset].name, COLOR_WHITE, 15, 40 + i * 24, (i == selected_item ? 3 : 2));
 		
 		gfx_SetColor(COLOR_WHITE);
-		gfx_Rectangle_NoClip(205, 40, 60, 60);
-		gfx_ScaledTransparentSprite_NoClip(store_inv[selected_item + i_offset].icon, 212, 47, 3, 3);
-		draw_custom_text("$", COLOR_WHITE, 205, 120, 2);
-		draw_custom_int(store_inv[selected_item + i_offset].price, 1, COLOR_WHITE, 213, 119, 2);
+		gfx_Rectangle_NoClip(205, 53, 59, 59);
+		gfx_Rectangle_NoClip(206, 54, 57, 57);
+		gfx_ScaledTransparentSprite_NoClip(store_inv[selected_item + i_offset].icon, 212, 60, 3, 3);
+		draw_custom_text("QTY: <   >", COLOR_WHITE, 198, 118, 2);
+		draw_custom_int(quantity, 2, COLOR_WHITE, 248, 118, 2);
+		draw_custom_text("$", money < (store_inv[selected_item + i_offset].price * quantity) ? COLOR_DARK_RED : COLOR_GREEN, 217, 137, 3);
+		draw_custom_int(store_inv[selected_item + i_offset].price * quantity, 1, money < (store_inv[selected_item + i_offset].price * quantity) ? COLOR_DARK_RED : COLOR_GREEN, 229, 136, 3);
 		//draw_custom_text(store_inv[selected_item + i_offset].description, COLOR_WHITE, 150, 105, 1);
 
 		if (can_press) {
 			if (kb_Data[7] & kb_Down) {
 				selected_item++;
+				quantity = 1;
 				can_press = false;
 			} else if (kb_Data[7] & kb_Up) {
 				selected_item--;
+				quantity = 1;
+				can_press = false;
+			} else if (kb_Data[7] & kb_Left) {
+				if (quantity > 1)
+					quantity--;
+				can_press = false;
+			} else if (kb_Data[7] & kb_Right) {
+				if (quantity < 10)
+					quantity++;
 				can_press = false;
 			}
 		}
