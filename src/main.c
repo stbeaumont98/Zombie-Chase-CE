@@ -38,7 +38,7 @@
 #define ID_C4 3					// C4 explodes at the players command and kills the zombies lured to it and zombies within a medium-sized radius.
 #define ID_LAND_MINE 4			// Land mines explode on contact killing anything within its medium-sized blast radius.
 #define ID_THE_BIG_ONE 5		// The big one kills all the zombies currently on the screen.
-#define ID_TBONE_STEAK 6			// Lures some zombies so the player may have some time to collect more things.
+#define ID_TBONE_STEAK 6		// Lures some zombies so the player may have some time to collect more things.
 #define ID_MEDIUM_LURE 7		// Lures more zombies than the small lure for a longer time period.
 #define ID_LARGE_LURE 8			// Lures more zombies than both the small and medium lures for an even longer time period.
 #define ID_CARDBOARD_ARMOR 9	// Cardboard armor protects the player from a few bites but falls apart quickly.
@@ -54,6 +54,7 @@ struct Item {
 	char name[20];
 	char description[0xFF];
 	uint16_t price;
+	uint8_t quantity;
 	gfx_sprite_t *icon;
 };
 
@@ -69,7 +70,7 @@ struct Player {
 	uint16_t x;
 	uint8_t y;
 	int health;
-	struct Item inventory[25];
+	struct Item inventory[10];
 	struct Item *equipped_weapon;
 	struct Item *equipped_armor;
 	struct Item *equipped_boots;
@@ -86,32 +87,31 @@ struct Zombie {
 void draw_player(uint16_t x, uint8_t y);
 void draw_health_pack(uint16_t x, uint8_t y);
 void draw_zombie(uint16_t x, uint8_t y);
-void draw_custom_text(char* text, uint8_t color, int x, int y, int scale);
-void draw_custom_int(int i, uint8_t length, uint8_t color, int x, int y, int scale);
+void draw_custom_text(char* text, uint8_t color, uint16_t x, uint8_t y, int scale);
+void draw_custom_int(int i, uint8_t length, uint8_t color, uint16_t x, uint8_t y, int scale);
 void draw_fail(void);
-void draw_store(bool can_press);
 bool is_in_radius(struct Zombie z);
 
 char fail_string[] = "PRESS [MODE] TO PLAY AGAIN";
 char status_string[] = "";
 
 static struct Item store_inv[16] = {		// Items that can be bought in the store.
-	{ID_MACHETE, "Machete", "A machete can be swung all around and kill some zombies within its reach.", 20, machete},
-	{ID_KATANA, "Katana", "A katana can also be swung around, but its range is bigger.", 50, katana},
-	{ID_GRENADE, "Grenade", "Grenades explode after an amount of time passes and then kills the zombies lured to it and that's about it.", 15, grenade},
-	{ID_C4, "C4", "C4 explodes at the players command and kills the zombies lured to it and zombies within a medium-sized radius.", 25, c4},
-	{ID_LAND_MINE, "Land Mine", "Land mines explode on contact killing anything within its medium-sized blast radius.", 40, land_mine},
-	{ID_THE_BIG_ONE, "The Big One", "The big one kills all the zombies currently on the screen.", 1000, the_big_one},
-	{ID_TBONE_STEAK, "T-Bone Steak", "Lures some zombies so the player may have some time to collect more things.", 20, t_bone},
-	{ID_MEDIUM_LURE, "Medium Lure", "Lures more zombies than the small lure for a longer time period.", 50, unknown},
-	{ID_LARGE_LURE, "Large Lure", "Lures more zombies than both the small and medium lures for an even longer time period.", 100, unknown},
-	{ID_CARDBOARD_ARMOR, "Cardboard Armor", "Cardboard armor protects the player from a few bites but falls apart quickly.", 20, unknown},
-	{ID_PLASTIC_ARMOR, "Plastic Armor", "Plastic armor can take a bit more damage than cardboard armor.", 50, unknown},
-	{ID_STEEL_ARMOR, "Steel Armor", "Steel armor protects the player from more bites but slows the player down.", 100, unknown},
-	{ID_FORCEFIELD_ARMOR, "Forcefield Armor", "Forcefield armor protects the player from all bites for 15 seconds.", 100, unknown},
-	{ID_CAMOUFLAGE_ARMOR, "Camo Armor", "Camouflage armor makes the player invisible to zombies for a period of time.", 100, unknown},
-	{ID_LIGHTWEIGHT_BOOTS, "Lightweight Boots", "Lightweight boots make the player move faster but can be damaged by a few bites.", 20, unknown},
-	{ID_HEAVYWEIGHT_BOOTS, "Heavyweight Boots", "Heavyweight boots make the player move faster and can be damaged by more bites.", 50, unknown},
+	{ID_MACHETE, "Machete", "A machete can be swung all around|and kill some zombies within its|reach.", 20, 5, machete},
+	{ID_KATANA, "Katana", "A katana can be swung around like|a machete, but its range is wider.", 50, 3, katana},
+	{ID_GRENADE, "Grenade", "Grenades explode after an amount|of time passes and then kills the|zombies lured to it.", 15, 25, grenade},
+	{ID_C4, "C4", "C4 explodes at the players [2nd]|command and kills the zombies|lured to it.", 25, 10, c4},
+	{ID_LAND_MINE, "Land Mine", "Land mines explode on contact,|killing anything within its blast|radius.", 40, 10, land_mine},
+	{ID_THE_BIG_ONE, "The Big One", "The big one kills all the zombies|currently on the screen.", 1000, 1, the_big_one},
+	{ID_TBONE_STEAK, "T-Bone Steak", "A T-bone steak lures some zombies|so the player may have some time|to collect more things.", 20, 50, t_bone},
+	{ID_MEDIUM_LURE, "Medium Lure", "Lures more zombies than T-bone|steak for a longer time period.", 50, 20, unknown},
+	{ID_LARGE_LURE, "Large Lure", "Lures more zombies than both the|small and medium lures for an|even longer time period.", 100, 10, unknown},
+	{ID_CARDBOARD_ARMOR, "Cardboard Armor", "Cardboard armor protects the|player from a few bites but falls|apart quickly.", 10, 30, unknown},
+	{ID_PLASTIC_ARMOR, "Plastic Armor", "Plastic armor can take a bit more|damage than cardboard armor.", 50, 10, unknown},
+	{ID_STEEL_ARMOR, "Steel Armor", "Steel armor protects the player|from more bites but slows the|player down.", 100, 5, unknown},
+	{ID_FORCEFIELD_ARMOR, "Forcefield Armor", "Forcefield armor protects the|player from all bites for 15|seconds.", 100, 2, unknown},
+	{ID_CAMOUFLAGE_ARMOR, "Camo Armor", "Camouflage armor makes the player|invisible to zombies for a period|of time.", 100, 5, unknown},
+	{ID_LIGHTWEIGHT_BOOTS, "Lightweight Boots", "Lightweight boots make the player|move faster but can be damaged by|a few bites.", 20, 0, unknown},
+	{ID_HEAVYWEIGHT_BOOTS, "Heavyweight Boots", "Heavyweight boots make the player|move faster and can be damaged by|more bites.", 50, 0, unknown},
 };
 
 uint16_t money = 0;					// Money obtained by the player.
@@ -135,7 +135,6 @@ int main() {
     p.x = 156;
     p.y = 232;
     p.health = 200;
-	p.equipped_weapon = &store_inv[2];
 	
 	int i, j;
 	bool infected = false;
@@ -369,7 +368,89 @@ int main() {
 
 			if (can_press) {
 				if (kb_Data[1] & kb_Mode) {
-					draw_store(can_press);
+					// Draw the store.
+					int i, i_offset = 0, selected_item = 0, quantity = 1, selling_price;
+					can_press = false;
+					while (!(can_press && (kb_Data[1] & kb_Mode || kb_Data[6] & kb_Clear))) {
+						kb_Scan();
+						// Black background.
+						gfx_FillScreen(COLOR_BLACK);
+						draw_custom_text("$", COLOR_WHITE, 10, 3, 4);
+						draw_custom_int(money, 1, COLOR_WHITE, 26, 2, 4);
+						draw_custom_text("STORE", COLOR_WHITE, 229, 3, 4);
+						gfx_SetColor(COLOR_WHITE);
+						gfx_FillRectangle_NoClip(0, 30, 320, 3);
+
+
+						for (i = 0; i < 6; i++)
+							draw_custom_text(store_inv[i + i_offset].name, COLOR_WHITE, 15, 40 + i * 24, (i == selected_item ? 3 : 2));
+						
+						// Draw the box with the icon inside.
+						gfx_SetColor(COLOR_WHITE);
+						gfx_Rectangle_NoClip(205, 53, 59, 59);
+						gfx_Rectangle_NoClip(206, 54, 57, 57);
+						gfx_ScaledTransparentSprite_NoClip(store_inv[selected_item + i_offset].icon, 212, 60, 3, 3);
+
+						// Draw the quantity 
+						draw_custom_text("QTY: <   >", COLOR_WHITE, 198, 118, 2);
+						draw_custom_int(quantity, 2, COLOR_WHITE, 248, 118, 2);
+						
+						// Calculate the selling price and display it underneath the quantity.
+						selling_price = store_inv[selected_item + i_offset].price * quantity;
+						draw_custom_text("$", money < selling_price ? COLOR_DARK_RED : COLOR_GREEN, 217, 137, 3);
+						draw_custom_int(selling_price, 1, money < selling_price ? COLOR_DARK_RED : COLOR_GREEN, 229, 136, 3);
+
+						gfx_Rectangle_NoClip(25, 189, 270, 40);
+						draw_custom_text(store_inv[selected_item + i_offset].description, COLOR_WHITE, 28, 190, 2);
+
+						// Check for key presses.
+						if (can_press) {
+							if (kb_Data[1] & kb_2nd || kb_Data[6] & kb_Enter) {
+								if (money >= selling_price) {
+									money -= selling_price;
+									// Check if the user already has at least one of that item
+									// If so, add to the quantity owned by the player
+									// Otherwise, find the next non-empty slot and put the new item there.
+								}
+							}
+
+							// Up and down controls the menu option, left and right controls the quantity of the item.
+							if (kb_Data[7] & kb_Down) {
+								selected_item++;
+								quantity = 1;
+								can_press = false;
+							} else if (kb_Data[7] & kb_Up) {
+								selected_item--;
+								quantity = 1;
+								can_press = false;
+							} else if (kb_Data[7] & kb_Left) {
+								if (quantity > 1)
+									quantity--;
+								can_press = false;
+							} else if (kb_Data[7] & kb_Right) {
+								if (quantity < store_inv[selected_item + i_offset].quantity)
+									quantity++;
+								can_press = false;
+							}
+						}
+
+						if (selected_item < 0 && i_offset > 0) {
+							i_offset--;
+							selected_item = 0;
+						} else if (selected_item > 5 && i_offset < 10) {
+							i_offset++;
+							selected_item = 5;
+						} else if (selected_item < 0) {
+							selected_item = 0;
+						} else if (selected_item > 5) {
+							selected_item = 5;
+						}
+
+						if (!kb_AnyKey()) can_press = true;
+						
+						gfx_SwapDraw();
+					}
+
 					can_press = false;
 				}
 				if (kb_Data[1] & kb_2nd) {
@@ -582,16 +663,28 @@ void draw_zombie(uint16_t x, uint8_t y) {
 	gfx_FillRectangle_NoClip(x + rand() % 4, y + rand() % 4, 2, 2);
 }
 
-void draw_custom_text(char* text, uint8_t color, int x, int y, int scale) {
+void draw_custom_text(char* text, uint8_t color, uint16_t x, uint8_t y, int scale) {
 	gfx_SetTextFGColor(color);
     gfx_SetTextBGColor(COLOR_RED);
     gfx_SetTextTransparentColor(COLOR_RED);
     gfx_SetTextXY(x, y);
 	gfx_SetTextScale(scale, scale);
-	gfx_PrintString(text);
+
+	if (x + strlen(text) * 4 * scale > gfx_lcdWidth) {
+		char tmp[0xFF];
+		strcpy(tmp, text);
+		char *token = strtok(tmp, "|");
+		while (token != NULL) {
+			gfx_PrintString(token);
+			token = strtok(NULL, "|");
+			y += (6 * scale);
+			gfx_SetTextXY(x, y);
+		}
+	} else 
+		gfx_PrintString(text);
 }
 
-void draw_custom_int(int i, uint8_t length, uint8_t color, int x, int y, int scale) {
+void draw_custom_int(int i, uint8_t length, uint8_t color, uint16_t x, uint8_t y, int scale) {
 	gfx_SetTextFGColor(color);
     gfx_SetTextBGColor(COLOR_RED);
     gfx_SetTextTransparentColor(COLOR_RED);
@@ -603,70 +696,6 @@ void draw_custom_int(int i, uint8_t length, uint8_t color, int x, int y, int sca
 void draw_fail(void) {
     gfx_ScaledTransparentSprite_NoClip(fail, 73, 76, 6, 6);
 	draw_custom_text(fail_string, COLOR_WHITE, 57, 148, 2);
-}
-
-void draw_store(bool can_press) {
-
-	int i, i_offset = 0, selected_item = 0, quantity = 1;
-	can_press = false;
-	while (!(can_press && (kb_Data[1] & kb_Mode || kb_Data[6] & kb_Clear))) {
-		kb_Scan();
-
-		gfx_FillScreen(COLOR_BLACK); // Black background
-		draw_custom_text("$", COLOR_WHITE, 10, 3, 4);
-		draw_custom_int(money, 1, COLOR_WHITE, 26, 2, 4);
-		draw_custom_text("STORE", COLOR_WHITE, 229, 3, 4);
-		gfx_SetColor(COLOR_WHITE);
-		gfx_FillRectangle_NoClip(0, 30, 320, 3);
-		for (i = 0; i < 6; i++)
-			draw_custom_text(store_inv[i + i_offset].name, COLOR_WHITE, 15, 40 + i * 24, (i == selected_item ? 3 : 2));
-		
-		gfx_SetColor(COLOR_WHITE);
-		gfx_Rectangle_NoClip(205, 53, 59, 59);
-		gfx_Rectangle_NoClip(206, 54, 57, 57);
-		gfx_ScaledTransparentSprite_NoClip(store_inv[selected_item + i_offset].icon, 212, 60, 3, 3);
-		draw_custom_text("QTY: <   >", COLOR_WHITE, 198, 118, 2);
-		draw_custom_int(quantity, 2, COLOR_WHITE, 248, 118, 2);
-		draw_custom_text("$", money < (store_inv[selected_item + i_offset].price * quantity) ? COLOR_DARK_RED : COLOR_GREEN, 217, 137, 3);
-		draw_custom_int(store_inv[selected_item + i_offset].price * quantity, 1, money < (store_inv[selected_item + i_offset].price * quantity) ? COLOR_DARK_RED : COLOR_GREEN, 229, 136, 3);
-		//draw_custom_text(store_inv[selected_item + i_offset].description, COLOR_WHITE, 150, 105, 1);
-
-		if (can_press) {
-			if (kb_Data[7] & kb_Down) {
-				selected_item++;
-				quantity = 1;
-				can_press = false;
-			} else if (kb_Data[7] & kb_Up) {
-				selected_item--;
-				quantity = 1;
-				can_press = false;
-			} else if (kb_Data[7] & kb_Left) {
-				if (quantity > 1)
-					quantity--;
-				can_press = false;
-			} else if (kb_Data[7] & kb_Right) {
-				if (quantity < 10)
-					quantity++;
-				can_press = false;
-			}
-		}
-
-		if (selected_item < 0 && i_offset > 0) {
-			i_offset--;
-			selected_item = 0;
-		} else if (selected_item > 5 && i_offset < 10) {
-			i_offset++;
-			selected_item = 5;
-		} else if (selected_item < 0) {
-			selected_item = 0;
-		} else if (selected_item > 5) {
-			selected_item = 5;
-		}
-
-		if (!kb_AnyKey()) can_press = true;
-		
-		gfx_SwapDraw();
-	}
 }
 
 bool is_in_radius(struct Zombie z) {
