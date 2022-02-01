@@ -25,6 +25,7 @@ converts:
       - land_mine.png
       - the_big_one.png
       - t_bone.png
+      - unknown.png
 
 outputs:
   - type: c

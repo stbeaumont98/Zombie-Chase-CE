@@ -16,6 +16,7 @@ extern "C" {
 #include "land_mine.h"
 #include "the_big_one.h"
 #include "t_bone.h"
+#include "unknown.h"
 
 #ifdef __cplusplus
 }
