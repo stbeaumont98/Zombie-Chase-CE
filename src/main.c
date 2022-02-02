@@ -32,22 +32,23 @@
 #define TYPE_LURE 3
 
 /* Item types */
-#define ID_MACHETE 0			// A machete can be swung all around and kill some zombies within its reach.
-#define ID_KATANA 1				// A katana can also be swung around, but its range is bigger.
-#define ID_GRENADE 2			// Grenades explode after an amount of time passes and then kills the zombies lured to it and that's about it.
-#define ID_C4 3					// C4 explodes at the players command and kills the zombies lured to it and zombies within a medium-sized radius.
-#define ID_LAND_MINE 4			// Land mines explode on contact killing anything within its medium-sized blast radius.
-#define ID_THE_BIG_ONE 5		// The big one kills all the zombies currently on the screen.
-#define ID_TBONE_STEAK 6		// Lures some zombies so the player may have some time to collect more things.
-#define ID_WHOLE_TURKEY 7		// Lures more zombies than the small lure for a longer time period.
-#define ID_DEAD_HORSE 8			// Lures more zombies than both the small and medium lures for an even longer time period.
-#define ID_CARDBOARD_ARMOR 9	// Cardboard armor protects the player from a few bites but falls apart quickly.
-#define ID_PLASTIC_ARMOR 10		// Plastic armor can take a bit more damage than cardboard armor.
-#define ID_STEEL_ARMOR 11		// Steel armor protects the player from more bites but slows the player down.
-#define ID_FORCEFIELD_ARMOR 12	// Forcefield armor protects the player from all bites for 15 seconds.
-#define ID_CAMOUFLAGE_ARMOR 13	// Camouflage armor makes the player invisible to zombies for a period of time.
-#define ID_LIGHTWEIGHT_BOOTS 14	// Lightweight boots make the player move faster but can be damaged by a few bites.
-#define ID_HEAVYWEIGHT_BOOTS 15	// Heavyweight boots make the player move faster and can be damaged by more bites.
+#define ID_EMPTY 0
+#define ID_MACHETE 1			// A machete can be swung all around and kill some zombies within its reach.
+#define ID_KATANA 2				// A katana can also be swung around, but its range is bigger.
+#define ID_GRENADE 3			// Grenades explode after an amount of time passes and then kills the zombies lured to it and that's about it.
+#define ID_C4 4					// C4 explodes at the players command and kills the zombies lured to it and zombies within a medium-sized radius.
+#define ID_LAND_MINE 5			// Land mines explode on contact killing anything within its medium-sized blast radius.
+#define ID_THE_BIG_ONE 6		// The big one kills all the zombies currently on the screen.
+#define ID_TBONE_STEAK 7		// Lures some zombies so the player may have some time to collect more things.
+#define ID_WHOLE_TURKEY 8		// Lures more zombies than the small lure for a longer time period.
+#define ID_DEAD_HORSE 9			// Lures more zombies than both the small and medium lures for an even longer time period.
+#define ID_CARDBOARD_ARMOR 10	// Cardboard armor protects the player from a few bites but falls apart quickly.
+#define ID_PLASTIC_ARMOR 11		// Plastic armor can take a bit more damage than cardboard armor.
+#define ID_STEEL_ARMOR 12		// Steel armor protects the player from more bites but slows the player down.
+#define ID_FORCEFIELD_ARMOR 13	// Forcefield armor protects the player from all bites for 15 seconds.
+#define ID_CAMOUFLAGE_ARMOR 14	// Camouflage armor makes the player invisible to zombies for a period of time.
+#define ID_LIGHTWEIGHT_BOOTS 15	// Lightweight boots make the player move faster but can be damaged by a few bites.
+#define ID_HEAVYWEIGHT_BOOTS 16	// Heavyweight boots make the player move faster and can be damaged by more bites.
 
 struct Item {
 	uint16_t id;
@@ -70,6 +71,8 @@ struct Player {
 	uint16_t x;
 	uint8_t y;
 	int health;
+	uint16_t money;
+	uint16_t points;
 	struct Item inventory[10];
 	struct Item *equipped_weapon;
 	struct Item *equipped_armor;
@@ -86,11 +89,13 @@ struct Zombie {
 /* Function prototypes */
 void draw_player(uint16_t x, uint8_t y);
 void draw_health_pack(uint16_t x, uint8_t y);
-void draw_zombie(uint16_t x, uint8_t y);
 void draw_custom_text(char* text, uint8_t color, uint16_t x, uint8_t y, int scale);
 void draw_custom_int(int i, uint8_t length, uint8_t color, uint16_t x, uint8_t y, int scale);
+void draw_inventory(bool from_game);
+void draw_store(bool from_game);
 void draw_fail(void);
 bool is_in_radius(struct Zombie z);
+int player_has_item(struct Item inventory[10], uint8_t id);
 
 gfx_sprite_t *z1, *z2, *z3, *z4, *z5, *z6;
 
@@ -116,7 +121,8 @@ static struct Item store_inv[16] = {		// Items that can be bought in the store.
 	{ID_HEAVYWEIGHT_BOOTS, "Heavyweight Boots", "Heavyweight boots make the player|move faster and can be damaged by|more bites.", 50, 0, unknown},
 };
 
-uint16_t money = 0;					// Money obtained by the player.
+struct Player p;
+bool can_press;
 
 int main() {
 
@@ -148,20 +154,20 @@ int main() {
     uint16_t hp_x;					// Health pack x and y.
     uint8_t hp_y;
     uint8_t zombie_count = 1;		// Number of zombies currently spawned.
-	uint16_t points = 0;			// Points obtained by the player.
 
 	/* Define the player */
-	struct Player p;
     p.x = 156;
     p.y = 232;
     p.health = 200;
+	p.money = 0;
+	p.points = 0;
 	
 	int i, j;
 	bool infected = false;
 	
 	int old_time, time, one_second;
-	
-	bool can_press = false;
+
+	can_press = false;
 
     srand(rtc_Time());
 
@@ -175,22 +181,35 @@ int main() {
     gfx_SetFontSpacing(font_spacing);
 	gfx_SetFontHeight(6);
     
-    zombie_spawn_timer = rand() % 5 + 4;
     hp_x = rand() % 310 + 2;
     hp_y = rand() % 230 + 2;
 	
+	for (i = 0; i < 10; i++) {
+		p.inventory[i].id = ID_EMPTY;
+		strcpy(p.inventory[i].name,"");
+		strcpy(p.inventory[i].description, "");
+		p.inventory[i].price = 0;
+		p.inventory[i].quantity = 0;
+		p.inventory[i].icon = NULL;
+	}
+
+	p.equipped_weapon = NULL;
+	p.equipped_armor = NULL;
+	p.equipped_boots = NULL;
+
 	for (i = 0; i < 0xFF; i++) {
 		z[i].x = rand() % 310 + 2;
 		z[i].y = rand() % 230 + 2;
 		z[i].target = NULL;
 		z[i].alive = false;
 	}
+    
+	z[0].alive = true;
+    zombie_spawn_timer = rand() % 5 + 4;
 
 	for (i = 0; i < 16; i++) {
 		objects[i] = NULL;
 	}
-    
-	z[0].alive = true;
 
 	time = rtc_Time();
 	
@@ -232,10 +251,22 @@ int main() {
 
 		/* Draw the players money and timer */
         draw_custom_text("$", COLOR_WHITE, 2, 2, 2);
-		draw_custom_int(money, 1, COLOR_WHITE, 10, 1, 2);
-		draw_custom_int(points / 60, 2, COLOR_WHITE, 2, 226, 2);
+		draw_custom_int(p.money, 1, COLOR_WHITE, 10, 1, 2);
+		draw_custom_int(p.points / 60, 2, COLOR_WHITE, 2, 226, 2);
 		draw_custom_text(":", COLOR_WHITE, 18, 226, 2);
-		draw_custom_int(points % 60, 2, COLOR_WHITE, 22, 226, 2);
+		draw_custom_int(p.points % 60, 2, COLOR_WHITE, 22, 226, 2);
+
+		/* Draw the pleyer's equipped items. */
+		for (i = 0; i < 3; i++) {
+			gfx_SetColor(COLOR_WHITE);
+			gfx_Rectangle_NoClip(265 + i * 18, 221, 17, 17);
+		}
+		if (p.equipped_weapon != NULL)
+			gfx_TransparentSprite_NoClip(p.equipped_weapon->icon, 266, 222);
+		if (p.equipped_armor != NULL)
+			gfx_TransparentSprite_NoClip(p.equipped_armor->icon, 284, 222);
+		if (p.equipped_boots != NULL)
+			gfx_TransparentSprite_NoClip(p.equipped_boots->icon, 302, 222);
 		
         for (i = zombie_count; i >= 0; i--) {
 			if (z[i].alive) {
@@ -426,93 +457,15 @@ int main() {
 			}
 
 			if (can_press) {
-				if (kb_Data[1] & kb_Mode) {
-					// Draw the store.
-					int i, i_offset = 0, selected_item = 0, quantity = 1, selling_price;
-					can_press = false;
-					while (!(can_press && (kb_Data[1] & kb_Mode || kb_Data[6] & kb_Clear))) {
-						kb_Scan();
-						// Black background.
-						gfx_FillScreen(COLOR_BLACK);
-						draw_custom_text("$", COLOR_WHITE, 10, 3, 4);
-						draw_custom_int(money, 1, COLOR_WHITE, 26, 2, 4);
-						draw_custom_text("STORE", COLOR_WHITE, 229, 3, 4);
-						gfx_SetColor(COLOR_WHITE);
-						gfx_FillRectangle_NoClip(0, 30, 320, 3);
-
-
-						for (i = 0; i < 6; i++)
-							draw_custom_text(store_inv[i + i_offset].name, COLOR_WHITE, 15, 40 + i * 24, (i == selected_item ? 3 : 2));
-						
-						// Draw the box with the icon inside.
-						gfx_SetColor(COLOR_WHITE);
-						gfx_Rectangle_NoClip(205, 53, 59, 59);
-						gfx_Rectangle_NoClip(206, 54, 57, 57);
-						gfx_ScaledTransparentSprite_NoClip(store_inv[selected_item + i_offset].icon, 212, 60, 3, 3);
-
-						// Draw the quantity 
-						draw_custom_text("QTY: <   >", COLOR_WHITE, 198, 118, 2);
-						draw_custom_int(quantity, 2, COLOR_WHITE, 248, 118, 2);
-						
-						// Calculate the selling price and display it underneath the quantity.
-						selling_price = store_inv[selected_item + i_offset].price * quantity;
-						draw_custom_text("$", money < selling_price ? COLOR_DARK_RED : COLOR_GREEN, 217, 137, 3);
-						draw_custom_int(selling_price, 1, money < selling_price ? COLOR_DARK_RED : COLOR_GREEN, 229, 136, 3);
-
-						gfx_Rectangle_NoClip(25, 189, 270, 40);
-						draw_custom_text(store_inv[selected_item + i_offset].description, COLOR_WHITE, 28, 190, 2);
-
-						// Check for key presses.
-						if (can_press) {
-							if (kb_Data[1] & kb_2nd || kb_Data[6] & kb_Enter) {
-								if (money >= selling_price) {
-									money -= selling_price;
-									// Check if the user already has at least one of that item
-									// If so, add to the quantity owned by the player
-									// Otherwise, find the next non-empty slot and put the new item there.
-								}
-							}
-
-							// Up and down controls the menu option, left and right controls the quantity of the item.
-							if (kb_Data[7] & kb_Down) {
-								selected_item++;
-								quantity = 1;
-								can_press = false;
-							} else if (kb_Data[7] & kb_Up) {
-								selected_item--;
-								quantity = 1;
-								can_press = false;
-							} else if (kb_Data[7] & kb_Left) {
-								if (quantity > 1)
-									quantity--;
-								can_press = false;
-							} else if (kb_Data[7] & kb_Right) {
-								if (quantity < store_inv[selected_item + i_offset].quantity)
-									quantity++;
-								can_press = false;
-							}
-						}
-
-						if (selected_item < 0 && i_offset > 0) {
-							i_offset--;
-							selected_item = 0;
-						} else if (selected_item > 5 && i_offset < 10) {
-							i_offset++;
-							selected_item = 5;
-						} else if (selected_item < 0) {
-							selected_item = 0;
-						} else if (selected_item > 5) {
-							selected_item = 5;
-						}
-
-						if (!kb_AnyKey()) can_press = true;
-						
-						gfx_SwapDraw();
-					}
-
+				if (kb_Data[1] & kb_Del) {
+					draw_store(true);
 					can_press = false;
 				}
-				if (kb_Data[1] & kb_2nd) {
+				if (kb_Data[1] & kb_Mode) {
+					draw_inventory(true);
+					can_press = false;
+				}
+				if (kb_Data[1] & kb_2nd && p.equipped_weapon->quantity > 0) {
 					switch (p.equipped_weapon->id) {
 						case ID_GRENADE:
 							if (objects[obj_count] == NULL) {
@@ -623,6 +576,9 @@ int main() {
 						case ID_KATANA:
 							break;
 					}
+
+					if (--p.equipped_weapon->quantity == 0)
+						p.equipped_weapon = NULL;
 					
 					obj_count++;
 
@@ -653,7 +609,7 @@ int main() {
 				p.health += 5;
 			hp_x = rand() % 310 + 2;
 			hp_y = rand() % 230 + 2;
-			money++;
+			p.money++;
         }
 
 		if (p.health > 200)
@@ -671,7 +627,7 @@ int main() {
 					z[i].alive = false;
 				}
 				z[0].alive = true;
-				money = points = 0;
+				p.money = p.points = 0;
 				zombie_count = 1;
 				zombie_spawn_timer = rand() % 5 + 4;
 				p.x = 156;
@@ -685,7 +641,7 @@ int main() {
         } else {
 			// Add points for how long the player has survived.
 			if (one_second)
-				points++;
+				p.points++;
 		}
         
 		// Decrement the zombie spawner every second.
@@ -719,16 +675,6 @@ void draw_health_pack(uint16_t x, uint8_t y) {
     gfx_FillRectangle_NoClip(x, y + 2, 6, 2);
 }
 
-void draw_zombie(uint16_t x, uint8_t y) {
-    gfx_SetColor(COLOR_DARK_GREEN);
-	gfx_FillRectangle_NoClip(x, y, 4, 4);
-	gfx_FillRectangle_NoClip(x + 2, y + 2, 4, 4);
-	//gfx_SetColor(COLOR_GREEN);
-	//gfx_FillRectangle_NoClip(x + rand() % 4, y + rand() % 4, 2, 2);
-	//gfx_SetColor(COLOR_DARK_RED);
-	//gfx_FillRectangle_NoClip(x + rand() % 4, y + rand() % 4, 2, 2);
-}
-
 void draw_custom_text(char* text, uint8_t color, uint16_t x, uint8_t y, int scale) {
 	gfx_SetTextFGColor(color);
     gfx_SetTextBGColor(COLOR_RED);
@@ -759,6 +705,189 @@ void draw_custom_int(int i, uint8_t length, uint8_t color, uint16_t x, uint8_t y
 	gfx_PrintInt(i, length);
 }
 
+void draw_inventory(bool from_game) {
+	// Draw the player's inventory.
+	uint8_t i;
+	can_press = false;
+	bool in_loop = true;
+	while (in_loop) {
+		kb_Scan();
+		// Black background.
+		gfx_FillScreen(COLOR_BLACK);
+		draw_custom_text("$", COLOR_WHITE, 10, 3, 4);
+		draw_custom_int(p.money, 1, COLOR_WHITE, 26, 2, 4);
+		draw_custom_text("INVENTORY", COLOR_WHITE, 165, 3, 4);
+		gfx_SetColor(COLOR_WHITE);
+		gfx_FillRectangle_NoClip(0, 30, 320, 3);
+
+		// Draw the inventory.
+		for (i = 0; i < 10; i++) {
+			gfx_SetColor(COLOR_WHITE);
+			gfx_Rectangle_NoClip(57 + (i % 5) * 42, 45 + (i / 5) * 42, 38, 38);
+			gfx_Rectangle_NoClip(58 + (i % 5) * 42, 46 + (i / 5) * 42, 36, 36);
+			if (p.inventory[i].icon != NULL && p.inventory[i].quantity > 0)
+				gfx_ScaledTransparentSprite_NoClip(p.inventory[i].icon, 61 + (i % 5) * 42, 49 + (i / 5) * 42, 2, 2);
+		}
+
+		// Check for key presses.
+		if (can_press) {
+
+			// Buttons to break the loop.
+			if (kb_Data[1] & kb_Mode || kb_Data[6] & kb_Clear)
+				in_loop = false;
+
+			// Action controls.
+			if (kb_Data[1] & kb_2nd || kb_Data[6] & kb_Enter) {
+				// Equip an item
+				can_press = false;
+			}
+
+			// The arrows control the player's selection.
+			if (kb_Data[7] & kb_Down) {
+				// Navigate inventory
+				can_press = false;
+			} else if (kb_Data[7] & kb_Up) {
+				// Navigate
+				can_press = false;
+			} else if (kb_Data[7] & kb_Left) {
+				// Navigate
+				can_press = false;
+			} else if (kb_Data[7] & kb_Right) {
+				// Navigate
+				can_press = false;
+			}
+
+			// Open the store from inventory.
+			if (kb_Data[1] & kb_Del) {
+				if (!from_game)
+					in_loop = false;
+				else {
+					draw_store(false);
+					can_press = false;
+				}
+			}
+		}
+
+		if (!kb_AnyKey()) can_press = true;
+						
+		gfx_SwapDraw();
+	}
+}
+
+void draw_store(bool from_game) {
+	// Draw the store.
+	int i, i_offset = 0, selected_item = 0, quantity = 1, selling_price;
+	can_press = false;
+	bool in_loop = true;
+	while (in_loop) {
+		kb_Scan();
+		// Black background.
+		gfx_FillScreen(COLOR_BLACK);
+		draw_custom_text("$", COLOR_WHITE, 10, 3, 4);
+		draw_custom_int(p.money, 1, COLOR_WHITE, 26, 2, 4);
+		draw_custom_text("STORE", COLOR_WHITE, 229, 3, 4);
+		gfx_SetColor(COLOR_WHITE);
+		gfx_FillRectangle_NoClip(0, 30, 320, 3);
+
+		for (i = 0; i < 6; i++)
+			draw_custom_text(store_inv[i + i_offset].name, COLOR_WHITE, 15, 40 + i * 24, (i == selected_item ? 3 : 2));
+		
+		// Draw the box with the icon inside.
+		gfx_SetColor(COLOR_WHITE);
+		gfx_Rectangle_NoClip(205, 53, 59, 59);
+		gfx_Rectangle_NoClip(206, 54, 57, 57);
+		gfx_ScaledTransparentSprite_NoClip(store_inv[selected_item + i_offset].icon, 212, 60, 3, 3);
+
+		// Draw the quantity 
+		draw_custom_text("QTY: <   >", COLOR_WHITE, 198, 118, 2);
+		draw_custom_int(quantity, 2, COLOR_WHITE, 248, 118, 2);
+				
+		// Calculate the selling price and display it underneath the quantity.
+		selling_price = store_inv[selected_item + i_offset].price * quantity;
+		draw_custom_text("$", p.money < selling_price ? COLOR_DARK_RED : COLOR_GREEN, 217, 137, 3);
+		draw_custom_int(selling_price, 1, p.money < selling_price ? COLOR_DARK_RED : COLOR_GREEN, 229, 136, 3);
+
+		gfx_Rectangle_NoClip(25, 189, 270, 40);
+		draw_custom_text(store_inv[selected_item + i_offset].description, COLOR_WHITE, 28, 190, 2);
+
+		// Check for key presses.
+		if (can_press) {
+
+			// Buttons to break the loop.
+			if (kb_Data[1] & kb_Del || kb_Data[6] & kb_Clear)
+				in_loop = false;
+
+			// Action controls
+			if (kb_Data[1] & kb_2nd || kb_Data[6] & kb_Enter) {
+				if (p.money >= selling_price) {
+					p.money -= selling_price;
+					// Check if the user already has at least one of that item
+					int item_index = player_has_item(p.inventory, store_inv[selected_item + i_offset].id);
+					if (item_index != -1) {
+						// If so, add to the quantity owned by the player
+						p.inventory[item_index].quantity += quantity;
+					} else {
+						// Otherwise, find the next non-empty slot and put the new item there.
+						strcpy(p.inventory[0].name, store_inv[selected_item + i_offset].name);
+						strcpy(p.inventory[0].description, store_inv[selected_item + i_offset].description);
+						p.inventory[0].id = store_inv[selected_item + i_offset].id;
+						p.inventory[0].quantity = quantity;
+						p.inventory[0].icon = store_inv[selected_item + i_offset].icon;
+
+						p.equipped_weapon = &p.inventory[0];
+					}
+				}
+				can_press = false;
+			}
+
+			// Up and down controls the menu option, left and right controls the quantity of the item.
+			if (kb_Data[7] & kb_Down) {
+				selected_item++;
+				quantity = 1;
+				can_press = false;
+			} else if (kb_Data[7] & kb_Up) {
+				selected_item--;
+				quantity = 1;
+				can_press = false;
+			} else if (kb_Data[7] & kb_Left) {
+				if (quantity > 1)
+					quantity--;
+				can_press = false;
+			} else if (kb_Data[7] & kb_Right) {
+				if (quantity < store_inv[selected_item + i_offset].quantity)
+					quantity++;
+				can_press = false;
+			}
+
+			// Open inventory from the store.
+			if (kb_Data[1] & kb_Mode) {
+				if (!from_game)
+					in_loop = false;
+				else {
+					draw_inventory(false);
+					can_press = false;
+				}
+			}
+		}
+
+		if (selected_item < 0 && i_offset > 0) {
+			i_offset--;
+			selected_item = 0;
+		} else if (selected_item > 5 && i_offset < 10) {
+			i_offset++;
+			selected_item = 5;
+		} else if (selected_item < 0) {
+			selected_item = 0;
+		} else if (selected_item > 5) {
+			selected_item = 5;
+		}
+
+		if (!kb_AnyKey()) can_press = true;
+						
+		gfx_SwapDraw();
+	}
+}
+
 void draw_fail(void) {
     gfx_ScaledTransparentSprite_NoClip(fail, 73, 76, 6, 6);
 	draw_custom_text(fail_string, COLOR_WHITE, 57, 148, 2);
@@ -767,4 +896,13 @@ void draw_fail(void) {
 bool is_in_radius(struct Zombie z) {
 	int distance = sqrt(pow(z.target->x - z.x, 2) + pow(z.target->y - z.y, 2));
 	return distance <= z.target->radius;
+}
+
+int player_has_item(struct Item inventory[10], uint8_t id) {
+	int i;
+	for (i = 0; i < 10; i++) {
+		if (inventory[i].id == id)
+			return i;
+	}
+	return -1;
 }
