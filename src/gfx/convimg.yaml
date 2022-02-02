@@ -18,6 +18,8 @@ converts:
     images:
       - title.png
       - fail.png
+      - zombie.png
+      - zombie_rot.png
       - machete.png
       - katana.png
       - grenade.png

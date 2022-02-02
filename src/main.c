@@ -39,8 +39,8 @@
 #define ID_LAND_MINE 4			// Land mines explode on contact killing anything within its medium-sized blast radius.
 #define ID_THE_BIG_ONE 5		// The big one kills all the zombies currently on the screen.
 #define ID_TBONE_STEAK 6		// Lures some zombies so the player may have some time to collect more things.
-#define ID_MEDIUM_LURE 7		// Lures more zombies than the small lure for a longer time period.
-#define ID_LARGE_LURE 8			// Lures more zombies than both the small and medium lures for an even longer time period.
+#define ID_WHOLE_TURKEY 7		// Lures more zombies than the small lure for a longer time period.
+#define ID_DEAD_HORSE 8			// Lures more zombies than both the small and medium lures for an even longer time period.
 #define ID_CARDBOARD_ARMOR 9	// Cardboard armor protects the player from a few bites but falls apart quickly.
 #define ID_PLASTIC_ARMOR 10		// Plastic armor can take a bit more damage than cardboard armor.
 #define ID_STEEL_ARMOR 11		// Steel armor protects the player from more bites but slows the player down.
@@ -92,6 +92,8 @@ void draw_custom_int(int i, uint8_t length, uint8_t color, uint16_t x, uint8_t y
 void draw_fail(void);
 bool is_in_radius(struct Zombie z);
 
+gfx_sprite_t *z1, *z2, *z3, *z4, *z5, *z6;
+
 char fail_string[] = "PRESS [MODE] TO PLAY AGAIN";
 char status_string[] = "";
 
@@ -103,8 +105,8 @@ static struct Item store_inv[16] = {		// Items that can be bought in the store.
 	{ID_LAND_MINE, "Land Mine", "Land mines explode on contact,|killing anything within its blast|radius. That includes you.", 40, 10, land_mine},
 	{ID_THE_BIG_ONE, "The Big One", "We're not quite sure what this|one does, but it sure sounds|fancy.", 1000, 1, the_big_one},
 	{ID_TBONE_STEAK, "T-Bone Steak", "A T-bone steak lures some zombies|so the player has some time to|collect more things.", 20, 50, t_bone},
-	{ID_MEDIUM_LURE, "Whole Turkey", "A whole turkey should lure more|zombies and last a little bit|longer than a steak.", 50, 20, turkey},
-	{ID_LARGE_LURE, "Dead Horse", "A dead horse lures the most|zombies for even longer. Don't|ask where we get them.", 100, 10, horse},
+	{ID_WHOLE_TURKEY, "Whole Turkey", "A whole turkey should lure more|zombies and last a little bit|longer than a steak.", 50, 20, turkey},
+	{ID_DEAD_HORSE, "Dead Horse", "A dead horse lures the most|zombies for even longer. Don't|ask where we get them.", 100, 10, horse},
 	{ID_CARDBOARD_ARMOR, "Cardboard Armor", "Cardboard armor protects the|player from a few bites but falls|apart quickly.", 10, 30, unknown},
 	{ID_PLASTIC_ARMOR, "Plastic Armor", "Plastic armor can take a bit more|damage than cardboard armor.", 50, 10, unknown},
 	{ID_STEEL_ARMOR, "Steel Armor", "Steel armor protects the player|from more bites but slows the|player down.", 100, 5, unknown},
@@ -117,6 +119,24 @@ static struct Item store_inv[16] = {		// Items that can be bought in the store.
 uint16_t money = 0;					// Money obtained by the player.
 
 int main() {
+
+	z1 = gfx_MallocSprite(6, 6);
+	z2 = gfx_MallocSprite(6, 6);
+	z3 = gfx_MallocSprite(6, 6);
+	z4 = gfx_MallocSprite(6, 6);
+	z5 = gfx_MallocSprite(6, 6);
+	z6 = gfx_MallocSprite(6, 6);
+
+	gfx_RotateSpriteC(zombie, z1);
+	gfx_RotateSpriteC(zombie_rot, z2);
+	gfx_RotateSpriteHalf(zombie, z3);
+	gfx_RotateSpriteHalf(zombie_rot, z4);
+	gfx_RotateSpriteC(z3, z5);
+	gfx_RotateSpriteC(z4, z6);
+
+	gfx_sprite_t *zombie_sprites[8] = {zombie, zombie_rot, z1, z2, z3, z4, z5, z6};
+
+	int z_dir = 0;
 	
 	struct Zombie z[0xFF];			// Up to 255 zombies can be on screen at once.
 	struct Target *objects[16];		// Up to 16 objects can be on screen at once.
@@ -155,7 +175,7 @@ int main() {
     gfx_SetFontSpacing(font_spacing);
 	gfx_SetFontHeight(6);
     
-    zombie_spawn_timer = rand() % 2 + 3;
+    zombie_spawn_timer = rand() % 5 + 4;
     hp_x = rand() % 310 + 2;
     hp_y = rand() % 230 + 2;
 	
@@ -209,7 +229,8 @@ int main() {
         
         draw_player(p.x, p.y);
 		draw_health_pack(hp_x, hp_y);
-		/* Draw the players money */
+
+		/* Draw the players money and timer */
         draw_custom_text("$", COLOR_WHITE, 2, 2, 2);
 		draw_custom_int(money, 1, COLOR_WHITE, 10, 1, 2);
 		draw_custom_int(points / 60, 2, COLOR_WHITE, 2, 226, 2);
@@ -218,17 +239,34 @@ int main() {
 		
         for (i = zombie_count; i >= 0; i--) {
 			if (z[i].alive) {
-				draw_zombie(z[i].x, z[i].y);
 				if (z[i].target == NULL) {
 					// Zombie chases the player.
-					if (z[i].x < p.x && rand() & 1)
+					if (z[i].x < p.x && rand() & 1) // Zombie travels right
 						z[i].x += 2;
-					if (z[i].x > p.x && rand() & 1)
+					if (z[i].x > p.x && rand() & 1) // Zombie travels left
 						z[i].x -= 2;
-					if (z[i].y < p.y && rand() & 1)
+					if (z[i].y < p.y && rand() & 1) // Zombie travels downward
 						z[i].y += 2;
-					if (z[i].y > p.y && rand() & 1)
+					if (z[i].y > p.y && rand() & 1) // Zombie travels upward
 						z[i].y -= 2;
+
+					// Change the direction the zombie is facing based on where it is relative to the player.
+					if (z[i].x == p.x && z[i].y < p.y)
+						z_dir = 0;
+					else if (z[i].x > p.x && z[i].y < p.y)
+						z_dir = 1;
+					else if (z[i].x > p.x && z[i].y == p.y)
+						z_dir = 2;
+					else if (z[i].x > p.x && z[i].y > p.y)
+						z_dir = 3;
+					else if (z[i].x == p.x && z[i].y > p.y)
+						z_dir = 4;
+					else if (z[i].x < p.x && z[i].y > p.y)
+						z_dir = 5;
+					else if (z[i].x < p.x && z[i].y == p.y)
+						z_dir = 6;
+					else
+						z_dir = 7;
 					
 				} else {
 					// Zombie chases the target.
@@ -240,6 +278,24 @@ int main() {
 						z[i].y += 2;
 					if (z[i].y > z[i].target->y && rand() & 1)
 						z[i].y -= 2;
+
+					// Change the direction the zombie is facing based on where it is relative to it's target.
+					if (z[i].x == z[i].target->x && z[i].y < z[i].target->y)
+						z_dir = 0;
+					else if (z[i].x > z[i].target->x && z[i].y < z[i].target->y)
+						z_dir = 1;
+					else if (z[i].x > z[i].target->x && z[i].y == z[i].target->y)
+						z_dir = 2;
+					else if (z[i].x > z[i].target->x && z[i].y > z[i].target->y)
+						z_dir = 3;
+					else if (z[i].x == z[i].target->x && z[i].y > z[i].target->y)
+						z_dir = 4;
+					else if (z[i].x < z[i].target->x && z[i].y > z[i].target->y)
+						z_dir = 5;
+					else if (z[i].x < z[i].target->x && z[i].y == z[i].target->y)
+						z_dir = 6;
+					else
+						z_dir = 7;
 
 					if (z[i].target->timer <= 0) {
 						if (z[i].target->type == TYPE_GRENADE || z[i].target->type == TYPE_C4 || z[i].target->type == TYPE_LAND_MINE) {
@@ -255,6 +311,9 @@ int main() {
 						z[i].target = NULL;
 					}
 				}
+
+				// Draw the zombies
+				gfx_TransparentSprite_NoClip(zombie_sprites[z_dir], z[i].x, z[i].y);
 
 				// Zombie bounds.
 				if (z[i].x < 2)
@@ -331,7 +390,7 @@ int main() {
 			z[zombie_count % 0xFF].alive = true;
 			zombie_count++;
 			
-            zombie_spawn_timer = rand() % 2 + 3;
+            zombie_spawn_timer = rand() % 5 + 4;
         }
         
         /* Process key input */
@@ -527,7 +586,7 @@ int main() {
 								}
 							}
 							break;
-						case ID_MEDIUM_LURE:
+						case ID_WHOLE_TURKEY:
 							if (objects[obj_count] == NULL) {
 								objects[obj_count] = (struct Target *) malloc(sizeof(struct Target));
 								objects[obj_count]->type = TYPE_LURE;
@@ -543,7 +602,7 @@ int main() {
 								}
 							}
 							break;
-						case ID_LARGE_LURE:
+						case ID_DEAD_HORSE:
 							if (objects[obj_count] == NULL) {
 								objects[obj_count] = (struct Target *) malloc(sizeof(struct Target));
 								objects[obj_count]->type = TYPE_GRENADE;
@@ -606,15 +665,15 @@ int main() {
             draw_fail();
 			if (can_press && kb_Data[1] & kb_Mode) {
 				for (i = 0; i < zombie_count; i++) {
-					z[i].x = 0;
-					z[i].y = 0;
+					z[i].x = rand() % 310 + 2;
+					z[i].y = rand() % 230 + 2;
 					z[i].target = NULL;
+					z[i].alive = false;
 				}
-				z[0].x = rand() % 310 + 2;
-				z[0].y = rand() % 230 + 2;
+				z[0].alive = true;
 				money = points = 0;
 				zombie_count = 1;
-				zombie_spawn_timer = rand() % 2 + 3;
+				zombie_spawn_timer = rand() % 5 + 4;
 				p.x = 156;
 				p.y = 232;
 				hp_x = rand() % 310 + 2;
@@ -636,6 +695,13 @@ int main() {
         gfx_SwapDraw();
 
     } while (!(can_press && kb_Data[6] & kb_Clear));
+
+	free(z1);
+	free(z2);
+	free(z3);
+	free(z4);
+	free(z5);
+	free(z6);
 	
     gfx_End();
     pgrm_CleanUp();
@@ -657,10 +723,10 @@ void draw_zombie(uint16_t x, uint8_t y) {
     gfx_SetColor(COLOR_DARK_GREEN);
 	gfx_FillRectangle_NoClip(x, y, 4, 4);
 	gfx_FillRectangle_NoClip(x + 2, y + 2, 4, 4);
-	gfx_SetColor(COLOR_GREEN);
-	gfx_FillRectangle_NoClip(x + rand() % 4, y + rand() % 4, 2, 2);
-	gfx_SetColor(COLOR_DARK_RED);
-	gfx_FillRectangle_NoClip(x + rand() % 4, y + rand() % 4, 2, 2);
+	//gfx_SetColor(COLOR_GREEN);
+	//gfx_FillRectangle_NoClip(x + rand() % 4, y + rand() % 4, 2, 2);
+	//gfx_SetColor(COLOR_DARK_RED);
+	//gfx_FillRectangle_NoClip(x + rand() % 4, y + rand() % 4, 2, 2);
 }
 
 void draw_custom_text(char* text, uint8_t color, uint16_t x, uint8_t y, int scale) {
