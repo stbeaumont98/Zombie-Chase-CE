@@ -5,8 +5,8 @@
 extern "C" {
 #endif
 
-#define sizeof_zombie_palette 36
-extern unsigned char zombie_palette[36];
+#define sizeof_zombie_palette 52
+extern unsigned char zombie_palette[52];
 
 #ifdef __cplusplus
 }

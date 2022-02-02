@@ -25,6 +25,8 @@ converts:
       - land_mine.png
       - the_big_one.png
       - t_bone.png
+      - turkey.png
+      - horse.png
       - unknown.png
 
 outputs:
