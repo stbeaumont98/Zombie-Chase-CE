@@ -94,13 +94,12 @@ void draw_custom_int(int i, uint8_t length, uint8_t color, uint16_t x, uint8_t y
 void draw_inventory(bool from_game);
 void draw_store(bool from_game);
 void draw_fail(void);
-bool is_in_radius(struct Zombie z);
 int player_has_item(struct Item inventory[10], uint8_t id);
 
 gfx_sprite_t *z1, *z2, *z3, *z4, *z5, *z6;
 
 char fail_string[] = "PRESS [MODE] TO PLAY AGAIN";
-char status_string[] = "";
+char status_string[0xFF];
 
 static struct Item store_inv[16] = {		// Items that can be bought in the store.
 	{ID_MACHETE, "Machete", "This one-handed weapon can be|swung all around to kill zombies|within its reach.", 20, 5, machete},
@@ -121,26 +120,12 @@ static struct Item store_inv[16] = {		// Items that can be bought in the store.
 	{ID_HEAVYWEIGHT_BOOTS, "Heavyweight Boots", "Heavyweight boots make the player|move faster and can be damaged by|more bites.", 50, 0, unknown},
 };
 
+static gfx_sprite_t *zombie_sprites[8] = {z_0, z_1, z_2, z_3, z_4, z_5, z_6, z_7};
+
 struct Player p;
 bool can_press;
 
 int main() {
-
-	z1 = gfx_MallocSprite(6, 6);
-	z2 = gfx_MallocSprite(6, 6);
-	z3 = gfx_MallocSprite(6, 6);
-	z4 = gfx_MallocSprite(6, 6);
-	z5 = gfx_MallocSprite(6, 6);
-	z6 = gfx_MallocSprite(6, 6);
-
-	gfx_RotateSpriteC(zombie, z1);
-	gfx_RotateSpriteC(zombie_rot, z2);
-	gfx_RotateSpriteHalf(zombie, z3);
-	gfx_RotateSpriteHalf(zombie_rot, z4);
-	gfx_RotateSpriteC(z3, z5);
-	gfx_RotateSpriteC(z4, z6);
-
-	gfx_sprite_t *zombie_sprites[8] = {zombie, zombie_rot, z1, z2, z3, z4, z5, z6};
 
 	int z_dir = 0;
 	
@@ -150,10 +135,11 @@ int main() {
 	uint8_t obj_count = 0;			// The number of objects currently on screen.
 	
     kb_key_t key;					// Variable to store keypad input.
-    uint8_t zombie_spawn_timer;		// Timer for zombies to spawn.
     uint16_t hp_x;					// Health pack x and y.
     uint8_t hp_y;
     uint8_t zombie_count = 1;		// Number of zombies currently spawned.
+    uint8_t zombie_spawn_timer;		// Timer for zombies to spawn.
+	uint8_t status_countdown = 0;
 
 	/* Define the player */
     p.x = 156;
@@ -224,19 +210,23 @@ int main() {
 		/* Black background */
         gfx_FillScreen(COLOR_BLACK);
         
-		draw_custom_text(status_string, COLOR_WHITE, 0, 0, 1);
+		if (status_countdown > 0) {
+			draw_custom_text(status_string, COLOR_WHITE, 320 - strlen(status_string) * 4, 232, 1);
+			if (one_second)
+				status_countdown--;
+		}
 
         /* Draw the health bar */
 		gfx_SetColor(COLOR_WHITE);
-		gfx_Rectangle_NoClip(58, 3, 204, 9);	// Draw the outline of the health bar.
+		gfx_Rectangle_NoClip(58, 2, 204, 9);	// Draw the outline of the health bar.
         gfx_SetColor(COLOR_RED);				// Health color red.
 
         if (p.health >= 1) {
-            gfx_FillRectangle_NoClip(60, 5, p.health, 5);
+            gfx_FillRectangle_NoClip(60, 4, p.health, 5);
 			gfx_SetColor(COLOR_LIGHT_RED);
-			gfx_HorizLine_NoClip(60, 5, p.health);
+			gfx_HorizLine_NoClip(60, 4, p.health);
 			gfx_SetColor(COLOR_DARK_RED);
-			gfx_FillRectangle_NoClip(60, 8, p.health, 2);
+			gfx_FillRectangle_NoClip(60, 7, p.health, 2);
 
 			if (infected && one_second) {
 				if (p.health >= 4)
@@ -259,17 +249,99 @@ int main() {
 		/* Draw the pleyer's equipped items. */
 		for (i = 0; i < 3; i++) {
 			gfx_SetColor(COLOR_WHITE);
-			gfx_Rectangle_NoClip(265 + i * 18, 221, 17, 17);
+			gfx_Rectangle_NoClip(263 + i * 19, 2, 17, 17);
 		}
 		if (p.equipped_weapon != NULL)
-			gfx_TransparentSprite_NoClip(p.equipped_weapon->icon, 266, 222);
+			gfx_TransparentSprite_NoClip(p.equipped_weapon->icon, 264, 3);
 		if (p.equipped_armor != NULL)
-			gfx_TransparentSprite_NoClip(p.equipped_armor->icon, 284, 222);
+			gfx_TransparentSprite_NoClip(p.equipped_armor->icon, 283, 3);
 		if (p.equipped_boots != NULL)
-			gfx_TransparentSprite_NoClip(p.equipped_boots->icon, 302, 222);
+			gfx_TransparentSprite_NoClip(p.equipped_boots->icon, 302, 3);
+
+		for (i = 0; i < obj_count; i++) {
+			if (objects[i] != NULL) {
+				if (objects[i]->timer > 0) {
+					switch (objects[i]->type) {
+						case TYPE_GRENADE:
+							gfx_SetColor(COLOR_DARK_GREEN);
+							gfx_FillRectangle_NoClip(objects[i]->x, objects[i]->y, 4, 4);
+							draw_custom_int(objects[i]->timer, 1, COLOR_WHITE, objects[i]->x + 4, objects[i]->y - 7, 1);
+							if (one_second && objects[i]->timer > 0) {
+								objects[i]->timer--;
+							}
+							break;
+						case TYPE_LURE:
+							gfx_SetColor(COLOR_DARK_RED);
+							gfx_FillRectangle_NoClip(objects[i]->x, objects[i]->y, 4, 4);
+							draw_custom_int(objects[i]->timer, 1, COLOR_WHITE, objects[i]->x + 4, objects[i]->y - 7, 1);
+							if (one_second && objects[i]->timer > 0) {
+								objects[i]->timer--;
+							}
+							break;
+						case TYPE_C4:
+							gfx_SetColor(COLOR_BEIGE);
+							gfx_FillRectangle_NoClip(objects[i]->x, objects[i]->y, 4, 4);
+							strcpy(status_string, "Press [alpha] to detonate C4.");
+							status_countdown = 1;
+							if (can_press && kb_Data[2] & kb_Alpha)
+								objects[i]->timer--;
+							break;
+						case TYPE_LAND_MINE:
+							gfx_SetColor(COLOR_GRAY);
+							gfx_FillRectangle_NoClip(objects[i]->x, objects[i]->y, 4, 4);
+							for (j = zombie_count; j >= 0; j--) {
+								if ((objects[i]->x < z[j].x + 6) && (objects[i]->x + 6 > z[j].x) && (objects[i]->y < z[j].y + 6) && (6 + objects[i]->y > z[j].y))
+									objects[i]->timer--;
+							}
+							break;
+					}
+				} else {
+					for (j = zombie_count; j >= 0; j--)
+						if (z[j].target == objects[i])
+							z[j].target = NULL;
+
+					if (objects[i]->type == TYPE_GRENADE || objects[i]->type == TYPE_C4 || objects[i]->type == TYPE_LAND_MINE) {
+
+						// Explosion
+						gfx_SetColor(COLOR_WHITE);
+						for (j = 20; j >= 1; j--)
+							gfx_FillCircle(objects[i]->x, objects[i]->y, objects[i]->radius / j);
+
+						int distance;
+
+						// Check if zombies are in the blast radius.
+						for (j = zombie_count; j >= 0; j--) {
+							distance = sqrt(pow(objects[i]->x - z[j].x, 2) + pow(objects[i]->y - z[j].y, 2));
+							if (distance <= objects[i]->radius) {
+								z[j].target = NULL;
+								z[j] = z[--zombie_count];
+								z[zombie_count].alive = false;
+							}
+						}
+
+						// Check if the player is in the blast radius.
+						distance = sqrt(pow(objects[i]->x - p.x, 2) + pow(objects[i]->y - p.y, 2));
+						if (distance <= objects[i]->radius)
+							p.health -= (p.health / 2);
+						
+					}
+
+					free(objects[i]);
+					if (obj_count == 1)
+						objects[i] = NULL;
+					else {
+						objects[i] = objects[obj_count - 1];
+						objects[obj_count - 1] = NULL;
+					}
+					obj_count--;
+				}
+			}
+		}
 		
         for (i = zombie_count; i >= 0; i--) {
 			if (z[i].alive) {
+				// Draw the zombies
+				gfx_TransparentSprite_NoClip(zombie_sprites[z_dir], z[i].x, z[i].y);
 				if (z[i].target == NULL) {
 					// Zombie chases the player.
 					if (z[i].x < p.x && rand() & 1) // Zombie travels right
@@ -327,24 +399,7 @@ int main() {
 						z_dir = 6;
 					else
 						z_dir = 7;
-
-					if (z[i].target->timer <= 0) {
-						if (z[i].target->type == TYPE_GRENADE || z[i].target->type == TYPE_C4 || z[i].target->type == TYPE_LAND_MINE) {
-							gfx_SetColor(COLOR_WHITE);
-							for (j = 20; j >= 1; j--) {
-								gfx_FillCircle(z[i].target->x, z[i].target->y, z[i].target->radius / j);
-							}
-							if (is_in_radius(z[i])) {
-								z[i] = z[--zombie_count];
-								z[zombie_count].alive = false;
-							}
-						}
-						z[i].target = NULL;
-					}
 				}
-
-				// Draw the zombies
-				gfx_TransparentSprite_NoClip(zombie_sprites[z_dir], z[i].x, z[i].y);
 
 				// Zombie bounds.
 				if (z[i].x < 2)
@@ -359,63 +414,14 @@ int main() {
 				/* Zombie/Player collisions */
 				if ((p.x < z[i].x + 6) && (p.x + 6 > z[i].x) && (p.y < z[i].y + 6) && (6 + p.y > z[i].y)) {
 					p.health--;
-					if (!infected)
-						infected = 1;
+					if (!infected) {
+						infected = true;
+						strcpy(status_string, "Infected!");
+						status_countdown = 3;
+					}
 				}
 			}
         }
-
-		for (i = 0; i < obj_count; i++) {
-			if (objects[i] != NULL) {
-				if (objects[i]->timer > 0) {
-					switch (objects[i]->type) {
-						case TYPE_GRENADE:
-							gfx_SetColor(COLOR_DARK_GREEN);
-							gfx_FillRectangle_NoClip(objects[i]->x, objects[i]->y, 4, 4);
-							draw_custom_int(objects[i]->timer, 1, COLOR_WHITE, objects[i]->x + 4, objects[i]->y - 7, 1);
-							if (one_second && objects[i]->timer > 0) {
-								objects[i]->timer--;
-							}
-							if (objects[i]->timer <= 0) {
-								free(objects[i]);
-								objects[i] = NULL;
-							}
-							break;
-						case TYPE_LURE:
-							gfx_SetColor(COLOR_DARK_RED);
-							gfx_FillRectangle_NoClip(objects[i]->x, objects[i]->y, 4, 4);
-							draw_custom_int(objects[i]->timer, 1, COLOR_WHITE, objects[i]->x + 4, objects[i]->y - 7, 1);
-							if (one_second && objects[i]->timer > 0) {
-								objects[i]->timer--;
-							}
-							break;
-						case TYPE_C4:
-							gfx_SetColor(COLOR_BEIGE);
-							gfx_FillRectangle_NoClip(objects[i]->x, objects[i]->y, 4, 4);
-							draw_custom_text("[2nd]", COLOR_WHITE, objects[i]->x, objects[i]->y - 7, 1);
-							if (can_press && kb_Data[2] & kb_Alpha)
-								objects[i]->timer--;
-							break;
-						case TYPE_LAND_MINE:
-							gfx_SetColor(COLOR_GRAY);
-							gfx_FillRectangle_NoClip(objects[i]->x, objects[i]->y, 4, 4);
-							if ((objects[i]->x < z[i].x + 6) && (objects[i]->x + 6 > z[i].x) && (objects[i]->y < z[i].y + 6) && (6 + objects[i]->y > z[i].y))
-								objects[i]->timer--;
-							break;
-					}
-				}
-				if (objects[i]->timer <= 0) {
-					free(objects[i]);
-					if (obj_count == 1)
-						objects[i] = NULL;
-					else {
-						objects[i] = objects[obj_count - 1];
-						objects[obj_count - 1] = NULL;
-					}
-					obj_count--;
-				}
-			}
-		}
 		
         if (zombie_spawn_timer == 0 && zombie_count < 0xFF) {
 			z[zombie_count % 0xFF].alive = true;
@@ -465,7 +471,7 @@ int main() {
 					draw_inventory(true);
 					can_press = false;
 				}
-				if (kb_Data[1] & kb_2nd && p.equipped_weapon->quantity > 0) {
+				if (kb_Data[1] & kb_2nd && p.equipped_weapon != NULL) {
 					switch (p.equipped_weapon->id) {
 						case ID_GRENADE:
 							if (objects[obj_count] == NULL) {
@@ -577,8 +583,17 @@ int main() {
 							break;
 					}
 
-					if (--p.equipped_weapon->quantity == 0)
+					// Decrease the quantity of your equipped weapon and check if you've run out.
+					if (--p.equipped_weapon->quantity == 0) {
+						// Set all these values so they are correct in the inventory.
+						p.equipped_weapon->id = ID_EMPTY;
+						strcpy(p.equipped_weapon->name, "");
+						strcpy(p.equipped_weapon->description, "");
+						p.equipped_weapon->icon = NULL;
+
+						// No weapon is equipped anymore.
 						p.equipped_weapon = NULL;
+					}
 					
 					obj_count++;
 
@@ -651,13 +666,6 @@ int main() {
         gfx_SwapDraw();
 
     } while (!(can_press && kb_Data[6] & kb_Clear));
-
-	free(z1);
-	free(z2);
-	free(z3);
-	free(z4);
-	free(z5);
-	free(z6);
 	
     gfx_End();
     pgrm_CleanUp();
@@ -725,7 +733,7 @@ void draw_inventory(bool from_game) {
 			gfx_SetColor(COLOR_WHITE);
 			gfx_Rectangle_NoClip(57 + (i % 5) * 42, 45 + (i / 5) * 42, 38, 38);
 			gfx_Rectangle_NoClip(58 + (i % 5) * 42, 46 + (i / 5) * 42, 36, 36);
-			if (p.inventory[i].icon != NULL && p.inventory[i].quantity > 0)
+			if (p.inventory[i].id != ID_EMPTY)
 				gfx_ScaledTransparentSprite_NoClip(p.inventory[i].icon, 61 + (i % 5) * 42, 49 + (i / 5) * 42, 2, 2);
 		}
 
@@ -891,11 +899,6 @@ void draw_store(bool from_game) {
 void draw_fail(void) {
     gfx_ScaledTransparentSprite_NoClip(fail, 73, 76, 6, 6);
 	draw_custom_text(fail_string, COLOR_WHITE, 57, 148, 2);
-}
-
-bool is_in_radius(struct Zombie z) {
-	int distance = sqrt(pow(z.target->x - z.x, 2) + pow(z.target->y - z.y, 2));
-	return distance <= z.target->radius;
 }
 
 int player_has_item(struct Item inventory[10], uint8_t id) {
