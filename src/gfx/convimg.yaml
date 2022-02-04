@@ -10,6 +10,9 @@ palettes:
       - color: {index: 7, r: 255, g: 115, b: 115}
       - color: {index: 8, r: 179, g: 153, b: 121}
       - color: {index: 9, r: 182, g: 182, b: 182}
+      - color: {index: 10, r: 227, g: 54, b: 68}
+      - color: {index: 11, r: 141, g: 96, b: 100}
+      - color: {index: 12, r: 105, g: 72, b: 35}
     images: automatic
 
 converts:
