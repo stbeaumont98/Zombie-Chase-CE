@@ -55,6 +55,12 @@
 #define ID_LIGHTWEIGHT_BOOTS 14	// Lightweight boots make the player move faster but can be damaged by a few bites.
 #define ID_HEAVYWEIGHT_BOOTS 15	// Heavyweight boots make the player move faster and can be damaged by more bites.
 
+struct Drop {
+	uint16_t x;
+	uint8_t y;
+	uint16_t value;
+};
+
 struct Item {
 	uint8_t type;
 	uint8_t id;
@@ -145,8 +151,7 @@ int main() {
 	struct Zombie z[0xFF];			// Up to 255 zombies can be on screen at once.
 	
     kb_key_t key;					// Variable to store keypad input.
-    uint16_t hp_x;					// Health pack x and y.
-    uint8_t hp_y;
+	struct Drop hp;					// Health pack x and y.
     uint8_t zombie_count = 1;		// Number of zombies currently spawned.
     uint8_t zombie_spawn_timer;		// Timer for zombies to spawn.
 	uint8_t status_countdown = 0;
@@ -156,7 +161,8 @@ int main() {
     p.y = 232;
     p.health = 200;
 	p.infected = false;
-	p.money = p.points = 0;
+	p.money = 0;
+	p.points = 0;
 	for (i = 0; i < 10; i++)
 		p.inv[i] = NULL;
 	
@@ -170,8 +176,9 @@ int main() {
 	obj_count = 0;
 
 	/* Initialize the health pack coordinates */
-	hp_x = rand() % 310 + 2;
-    hp_y = rand() % 230 + 2;
+	hp.x = rand() % 310 + 2;
+    hp.y = rand() % 230 + 2;
+	hp.value = rand() % 3 + 2;
 
 	/* Initialize the array of zombies. */
 	for (i = 0; i < 0xFF; i++) {
@@ -220,7 +227,7 @@ int main() {
 		 * TODO: Determine if any visual improvements can be made. 
 		 */
 		if (status_countdown > 0) {
-			draw_custom_text(status_string, COLOR_WHITE, 320 - strlen(status_string) * 4, 232, 1);
+			draw_custom_text(status_string, COLOR_WHITE, 320 - strlen(status_string) * 4 * 2, 224, 2);
 			if (one_second)
 				status_countdown--;
 		}
@@ -246,7 +253,7 @@ int main() {
         }
         
         draw_player(p.x, p.y);
-		draw_health_pack(hp_x, hp_y);
+		draw_health_pack(hp.x, hp.y);
 
 		/* Draw the players money and timer */
         draw_custom_text("$", COLOR_WHITE, 2, 2, 2);
@@ -258,6 +265,7 @@ int main() {
 		/* Draw the player's equipped items.
 		 * TODO: Make improvements on visuals.
 		 */
+		/*
 		for (i = 0; i < 3; i++) {
 			gfx_SetColor(COLOR_WHITE);
 			gfx_Rectangle_NoClip(263 + i * 19, 2, 17, 17);
@@ -268,7 +276,7 @@ int main() {
 			gfx_TransparentSprite_NoClip(p.equipped_armor->icon, 283, 3);
 		if (p.equipped_boots != NULL)
 			gfx_TransparentSprite_NoClip(p.equipped_boots->icon, 302, 3);
-
+		*/
 
 		/* Game logic for any objects on the screen. */
 		for (i = 0; i < obj_count; i++) {
@@ -619,14 +627,15 @@ int main() {
 			p.y = 232;
 
         /* Health pack collisions */
-        if ((p.x < hp_x + 6) && (p.x + 5 > hp_x) && (p.y < hp_y + 6) && (5 + p.y > hp_y)) {
+        if ((p.x < hp.x + 6) && (p.x + 5 > hp.x) && (p.y < hp.y + 6) && (5 + p.y > hp.y)) {
 			if (p.infected)
 				p.health += 10;
 			else 
 				p.health += 5;
-			hp_x = rand() % 310 + 2;
-			hp_y = rand() % 230 + 2;
-			p.money++;
+			p.money+=hp.value;
+			hp.x = rand() % 310 + 2;
+			hp.y = rand() % 230 + 2;
+			hp.value = rand() % 3 + 2;
         }
 
 		if (p.health > 200)
@@ -673,8 +682,9 @@ int main() {
 				p.equipped_boots = NULL;
 
 				/* Initialize health pack and health. */
-				hp_x = rand() % 310 + 2;
-				hp_y = rand() % 230 + 2;
+				hp.x = rand() % 310 + 2;
+				hp.y = rand() % 230 + 2;
+				hp.value = rand() % 3 + 2;
 				p.infected = false;
 				can_press = false;
             }
@@ -721,7 +731,7 @@ void draw_custom_text(char* text, uint8_t color, uint16_t x, uint8_t y, int scal
     gfx_SetTextXY(x, y);
 	gfx_SetTextScale(scale, scale);
 
-	if (x + strlen(text) * 4 * scale > gfx_lcdWidth) {
+	if (x + strlen(text) * 4 * scale > GFX_LCD_WIDTH) {
 		char tmp[0xFF];
 		strcpy(tmp, text);
 		char *token = strtok(tmp, "|");
