@@ -26,6 +26,11 @@ extern "C" {
 #include "t_bone.h"
 #include "turkey.h"
 #include "horse.h"
+#include "cb_armor.h"
+#include "p_armor.h"
+#include "s_armor.h"
+#include "camo_armor.h"
+#include "ff_armor.h"
 #include "unknown.h"
 
 #ifdef __cplusplus

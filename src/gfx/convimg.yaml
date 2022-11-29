@@ -38,6 +38,11 @@ converts:
       - t_bone.png
       - turkey.png
       - horse.png
+      - cb_armor.png
+      - p_armor.png
+      - s_armor.png
+      - camo_armor.png
+      - ff_armor.png
       - unknown.png
 
 outputs:
