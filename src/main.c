@@ -673,10 +673,11 @@ int main() {
 				p.y = 232;
 				p.health = 200;
 				p.money = p.points = 0;
-				for (i = 0; i < p.inv_count; i++) {
+				for (i = 0; i < 10; i++) {
 					free(p.inv[i]);
 					p.inv[i] = NULL;
 				}
+				p.inv_count = 0;
 				p.equipped_weapon = NULL;
 				p.equipped_armor = NULL;
 				p.equipped_boots = NULL;
