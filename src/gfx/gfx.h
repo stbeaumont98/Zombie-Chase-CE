@@ -31,6 +31,8 @@ extern "C" {
 #include "s_armor.h"
 #include "camo_armor.h"
 #include "ff_armor.h"
+#include "lw_boots.h"
+#include "hw_boots.h"
 #include "unknown.h"
 
 #ifdef __cplusplus

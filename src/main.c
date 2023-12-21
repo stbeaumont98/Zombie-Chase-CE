@@ -130,8 +130,8 @@ static struct Item store_inv[16] = {		// Items that can be bought in the store.
 	{TYPE_ARMOR, ID_STEEL_ARMOR, "Steel Armor", "Steel armor protects the player|from more bites but slows the|player down.", 100, 5, s_armor},
 	{TYPE_ARMOR, ID_FORCEFIELD_ARMOR, "Forcefield Armor", "Forcefield armor protects the|player from all bites for 15|seconds.", 100, 2, ff_armor},
 	{TYPE_ARMOR, ID_CAMOUFLAGE_ARMOR, "Camo Armor", "Camouflage armor makes the player|invisible to zombies for a period|of time.", 100, 5, camo_armor},
-	{TYPE_BOOTS, ID_LIGHTWEIGHT_BOOTS, "Lightweight Boots", "Lightweight boots make the player|move faster but can be damaged by|a few bites.", 20, 0, unknown},
-	{TYPE_BOOTS, ID_HEAVYWEIGHT_BOOTS, "Heavyweight Boots", "Heavyweight boots make the player|move faster and can be damaged by|more bites.", 50, 0, unknown},
+	{TYPE_BOOTS, ID_LIGHTWEIGHT_BOOTS, "Lightweight Boots", "Lightweight boots make the player|move faster but can be damaged by|a few bites.", 20, 0, lw_boots},
+	{TYPE_BOOTS, ID_HEAVYWEIGHT_BOOTS, "Heavyweight Boots", "Heavyweight boots make the player|move faster and can be damaged by|more bites.", 50, 0, hw_boots},
 };
 
 static gfx_sprite_t *zombie_sprites[8] = {z_0, z_1, z_2, z_3, z_4, z_5, z_6, z_7};

@@ -43,6 +43,8 @@ converts:
       - s_armor.png
       - camo_armor.png
       - ff_armor.png
+      - lw_boots.png
+      - hw_boots.png
       - unknown.png
 
 outputs:
