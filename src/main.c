@@ -760,6 +760,9 @@ void draw_inventory(bool from_game) {
 	uint8_t i;
 	can_press = false;
 	bool in_loop = true;
+
+	uint8_t cursor_pos = 0;
+
 	while (in_loop) {
 		kb_Scan();
 		// Black background.
@@ -773,11 +776,14 @@ void draw_inventory(bool from_game) {
 		// Draw the inventory.
 		for (i = 0; i < 10; i++) {
 			gfx_SetColor(COLOR_WHITE);
-			gfx_Rectangle_NoClip(57 + (i % 5) * 42, 45 + (i / 5) * 42, 38, 38);
-			gfx_Rectangle_NoClip(58 + (i % 5) * 42, 46 + (i / 5) * 42, 36, 36);
+			gfx_Rectangle_NoClip(41 + (i % 5) * 50, 45 + (i / 5) * 50, 38, 38);
+			gfx_Rectangle_NoClip(42 + (i % 5) * 50, 46 + (i / 5) * 50, 36, 36);
 			if (p.inv[i] != NULL)
-				gfx_ScaledTransparentSprite_NoClip(p.inv[i]->icon, 61 + (i % 5) * 42, 49 + (i / 5) * 42, 2, 2);
+				gfx_ScaledTransparentSprite_NoClip(p.inv[i]->icon, 45 + (i % 5) * 50, 49 + (i / 5) * 50, 2, 2);
 		}
+
+		// Draw inventory cursor
+		gfx_Rectangle_NoClip(38 + (cursor_pos % 5) * 50, 42 + (cursor_pos / 5) * 50, 44, 44);
 
 		// Check for key presses.
 		if (can_press) {
@@ -793,17 +799,17 @@ void draw_inventory(bool from_game) {
 			}
 
 			// The arrows control the player's selection.
-			if (kb_Data[7] & kb_Down) {
-				// Navigate inventory
+			if (kb_Data[7] & kb_Down && cursor_pos < 5) {
+				cursor_pos += 5;
 				can_press = false;
-			} else if (kb_Data[7] & kb_Up) {
-				// Navigate
+			} else if (kb_Data[7] & kb_Up && cursor_pos > 4) {
+				cursor_pos -= 5;
 				can_press = false;
-			} else if (kb_Data[7] & kb_Left) {
-				// Navigate
+			} else if (kb_Data[7] & kb_Left && cursor_pos > 0) {
+				cursor_pos--;
 				can_press = false;
-			} else if (kb_Data[7] & kb_Right) {
-				// Navigate
+			} else if (kb_Data[7] & kb_Right && cursor_pos < 9) {
+				cursor_pos++;
 				can_press = false;
 			}
 
