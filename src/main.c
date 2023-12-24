@@ -58,6 +58,8 @@
 #define ID_LIGHTWEIGHT_BOOTS 14	// Lightweight boots make the player move faster but can be damaged by a few bites.
 #define ID_HEAVYWEIGHT_BOOTS 15	// Heavyweight boots make the player move faster and can be damaged by more bites.
 
+uint8_t inv_size = 0;
+
 struct Drop {
 	uint16_t x;
 	uint8_t y;
@@ -100,7 +102,7 @@ struct Item *newItem(uint8_t type, uint8_t id, char name[], char desc[], uint8_t
 int8_t getNodeIndex(struct LinkedList *list, struct Node *item) {
 	struct Node *temp = list->head;
 	int8_t index = 0;
-	while (temp != item && temp != NULL && index < 10) {
+	while (temp != item && temp != NULL && index < inv_size) {
 		temp = temp->next;
 		index++;
 	}
@@ -113,11 +115,11 @@ int8_t getNodeIndex(struct LinkedList *list, struct Node *item) {
 int8_t getItemIndex(struct LinkedList *list, uint8_t id) {
 	struct Node *temp = list->head;
 	int8_t index = 0;
-	while (temp->data->id != id && temp != NULL && index < 10) {
+	while (temp->data->id != id && temp != NULL && index < inv_size) {
 		temp = temp->next;
 		index++;
 	}
-	if (temp != NULL && index < 10)
+	if (temp != NULL && index < inv_size)
 		return index;
 	else
 		return -1;
@@ -167,7 +169,7 @@ void addItem(struct LinkedList *list, struct Item *item) {
 
 void removeAllItems(struct LinkedList *list) {
 	uint8_t index = 0;
-	for (index = 0; index < 10; index++) {
+	for (index = 0; index < inv_size; index++) {
 		removeItem(list, list->head);
 	}
 	free(list->tail);
@@ -210,7 +212,6 @@ struct Player {
 	uint16_t money;
 	uint16_t points;
 	struct LinkedList *inv;
-	uint8_t inv_count;
 	struct Node *equipped_weapon;
 	struct Node *equipped_armor;
 	struct Node *equipped_boots;
@@ -289,7 +290,7 @@ int main() {
 	p.inv = (struct LinkedList *) malloc(sizeof(struct LinkedList));
 	removeAllItems(p.inv);
 
-	p.inv_count = 0;
+	inv_size = 0;
 	p.equipped_weapon = p.equipped_armor = p.equipped_boots = NULL;
 
 	/* Initialize the objects array. */
@@ -374,16 +375,16 @@ int main() {
 					p.health = 0;
 			}
         }
-        
-        draw_player(p.x, p.y);
-		draw_health_pack(hp.x, hp.y);
-
+		
 		/* Draw the players money and timer */
         draw_custom_text("$", COLOR_WHITE, 2, 2, 2);
 		draw_custom_int(p.money, 1, COLOR_WHITE, 10, 1, 2);
 		draw_custom_int(p.points / 60, 2, COLOR_WHITE, 2, 226, 2);
 		draw_custom_text(":", COLOR_WHITE, 18, 226, 2);
 		draw_custom_int(p.points % 60, 2, COLOR_WHITE, 22, 226, 2);
+        
+        draw_player(p.x, p.y);
+		draw_health_pack(hp.x, hp.y);
 
 		/* Draw the player's equipped items.
 		 * TODO: Make improvements on visuals.
@@ -710,7 +711,7 @@ int main() {
 								/* No weapon is equipped anymore. */
 								p.equipped_weapon = NULL;
 
-								p.inv_count--;
+								inv_size--;
 							}
 						}
 					}
@@ -780,7 +781,7 @@ int main() {
 				p.money = p.points = 0;
 
 				removeAllItems(p.inv);
-				p.inv_count = 0;
+				inv_size = 0;
 
 				p.equipped_weapon = NULL;
 				p.equipped_armor = NULL;
@@ -943,7 +944,9 @@ void draw_inventory(bool from_game) {
 
 void draw_store(bool from_game) {
 	// Draw the store.
-	int i, i_offset = 0, selected_item = 0, quantity = 1, selling_price;
+	uint8_t i, quantity = 1;
+	int8_t i_offset = 0, selected_item = 0;
+	uint16_t selling_price;
 	can_press = false;
 	bool in_loop = true;
 	while (in_loop) {
@@ -986,7 +989,7 @@ void draw_store(bool from_game) {
 
 			// Action controls
 			if (kb_Data[1] & kb_2nd || kb_Data[6] & kb_Enter) {
-				if (p.money >= selling_price && p.inv_count < 10) {
+				if (p.money >= selling_price && inv_size < 10) {
 					p.money -= selling_price;
 					// Check if the user already has at least one of that item
 					int item_index = getItemIndex(p.inv, store_inv[selected_item + i_offset].id);
@@ -1002,7 +1005,7 @@ void draw_store(bool from_game) {
 							store_inv[selected_item + i_offset].id,
 							store_inv[selected_item + i_offset].name,
 							store_inv[selected_item + i_offset].description,
-							store_inv[selected_item + i_offset].quantity,
+							quantity,
 							store_inv[selected_item + i_offset].icon
 							));
 						
@@ -1010,7 +1013,7 @@ void draw_store(bool from_game) {
 
 						p.equipped_weapon = p.inv->head;
 
-						p.inv_count++;
+						inv_size++;
 					}
 				}
 				can_press = false;
