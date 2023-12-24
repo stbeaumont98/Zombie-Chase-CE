@@ -8,12 +8,15 @@
 #include <string.h>
 #include <tice.h>
 
+#include <debug.h>
+
 /* Shared libraries */
 #include <graphx.h>
 #include <keypadc.h>
 
 #include "gfx\gfx.h"
 #include "gfx\zombie_font.h"
+
 
 /* Colors */
 #define COLOR_RED 0x00
@@ -71,6 +74,125 @@ struct Item {
 	gfx_sprite_t *icon;
 };
 
+struct Node {
+	struct Item *data;
+	struct Node *next;
+};
+
+struct LinkedList {
+	struct Node *head;
+	struct Node *tail;
+};
+
+struct Item *newItem(uint8_t type, uint8_t id, char name[], char desc[], uint8_t quantity, gfx_sprite_t *icon) {
+	struct Item *i = (struct Item *) malloc(sizeof(struct Item));
+
+	i->type = type;
+	i->id = id;
+	strcpy(i->name, name);
+	strcpy(i->description, desc);
+	i->quantity = quantity;
+	i->icon = icon;
+
+	return i;
+}
+
+int8_t getNodeIndex(struct LinkedList *list, struct Node *item) {
+	struct Node *temp = list->head;
+	int8_t index = 0;
+	while (temp != item && temp != NULL && index < 10) {
+		temp = temp->next;
+		index++;
+	}
+	if (temp != NULL && index < 10)
+		return index;
+	else
+		return -1;
+}
+
+int8_t getItemIndex(struct LinkedList *list, uint8_t id) {
+	struct Node *temp = list->head;
+	int8_t index = 0;
+	while (temp->data->id != id && temp != NULL && index < 10) {
+		temp = temp->next;
+		index++;
+	}
+	if (temp != NULL && index < 10)
+		return index;
+	else
+		return -1;
+}
+
+void removeItem(struct LinkedList *list, struct Node *item) {
+	struct Node *temp;
+
+	if (list->head != NULL && list->tail != NULL) {
+		if (list->head == item && list->head != list->tail) {
+			temp = list->head;
+			list->head = list->head->next;
+			free(temp);
+		} else if (list->head == item && list->head == list->tail) {
+			free(list->head);
+			free(list->tail);
+			list->head = list->tail = NULL;
+		} else {
+			uint8_t index = getNodeIndex(list, item);
+			temp = list->head;
+			while (index > 1) {
+				temp = temp->next;
+				index--;
+			}
+			struct Node *t = temp->next;
+			temp->next = temp->next->next;
+			free(t);
+		}
+	}
+}
+
+void addItem(struct LinkedList *list, struct Item *item) {
+	struct Node *n = (struct Node *) malloc(sizeof(struct Node));
+	n->data = item;
+	n->next = NULL;
+
+	if (list->head == NULL && list->tail == NULL) {
+		list->head = n;
+		list->tail = n;
+		dbg_printf("List is not empty anymore!\n");
+	} else {
+		list->tail->next = n;
+		list->tail = list->tail->next;
+		dbg_printf("Added to list!\n");
+	}
+}
+
+void removeAllItems(struct LinkedList *list) {
+	uint8_t index = 0;
+	for (index = 0; index < 10; index++) {
+		removeItem(list, list->head);
+	}
+	free(list->tail);
+	list->head = list->tail = NULL;
+}
+
+void incItemQuantity(struct LinkedList *list, uint8_t index, uint8_t quantity) {
+	struct Node *temp = list->head;
+	while (index > 0) {
+		temp = temp->next;
+		index--;
+	}
+	temp->data->quantity += quantity;
+}
+
+void decItemQuantity(struct LinkedList *list, uint8_t id) {
+	uint8_t index = getItemIndex(list, id);
+	struct Node *temp = list->head;
+	while (index > 0) {
+		temp = temp->next;
+		index--;
+	}
+	temp->data->quantity--;
+}
+
 struct Target {
 	uint8_t type;
 	uint8_t id;
@@ -87,11 +209,11 @@ struct Player {
 	bool infected;
 	uint16_t money;
 	uint16_t points;
-	struct Item *inv[10];
+	struct LinkedList *inv;
 	uint8_t inv_count;
-	struct Item *equipped_weapon;
-	struct Item *equipped_armor;
-	struct Item *equipped_boots;
+	struct Node *equipped_weapon;
+	struct Node *equipped_armor;
+	struct Node *equipped_boots;
 };
 
 struct Zombie {
@@ -161,11 +283,12 @@ int main() {
     p.y = 232;
     p.health = 200;
 	p.infected = false;
-	p.money = 0;
+	p.money = 500;
 	p.points = 0;
-	for (i = 0; i < 10; i++)
-		p.inv[i] = NULL;
-	
+
+	p.inv = (struct LinkedList *) malloc(sizeof(struct LinkedList));
+	removeAllItems(p.inv);
+
 	p.inv_count = 0;
 	p.equipped_weapon = p.equipped_armor = p.equipped_boots = NULL;
 
@@ -432,7 +555,7 @@ int main() {
 						z[i].y -= 2;
 
 					/* Change the direction the zombie is facing based on where
-					 * it is relative to the player. 
+					 * it is relative to its target. 
 					 */
 					if (z[i].x == z[i].target->x && z[i].y < z[i].target->y)
 						z_dir = 0;
@@ -527,10 +650,10 @@ int main() {
 				}
 				if (kb_Data[1] & kb_2nd && p.equipped_weapon != NULL) {
 					/* Do an action based on what weapon is equipped. */
-					if (p.equipped_weapon->type == TYPE_MELEE) {
+					if (p.equipped_weapon->data->type == TYPE_MELEE) {
 						uint8_t swing_radius;
 
-						if (p.equipped_weapon->id == ID_MACHETE)
+						if (p.equipped_weapon->data->id == ID_MACHETE)
 							swing_radius = 10;
 						else
 							swing_radius = 20;
@@ -555,7 +678,7 @@ int main() {
 						if (objects[obj_count] == NULL) {
 
 							/* Add a new object to the objects array. */
-							new_object(p.equipped_weapon->id);
+							new_object(p.equipped_weapon->data->id);
 
 							/* Set this new object as the target for a random amount of zombies. */
 							for (i = rand() % zombie_count; i < zombie_count; i++) {
@@ -570,41 +693,23 @@ int main() {
 								obj_count = 15;
 
 							/* Decrease the quantity of the players equipped weapon and check if they've run out. */
-							if (--p.equipped_weapon->quantity == 0) {
+							if (--p.equipped_weapon->data->quantity == 0) {
 								/* If they've run out of the item that's in their hands,
 								 * remove that item from the inventory. 
 								 */
 
-								/* Find the item in inventory and set it to NULL. */
-								for (i = 0; i < p.inv_count; i++) {
-									if (p.equipped_weapon == p.inv[i]) {
-										free(p.inv[i]);
-										p.inv[i] = NULL;
+								/* Find the item in inventory and remove it from player inventory. */
+								struct Node *tmp = p.inv->head;
+								while (tmp != NULL) {
+									if (p.equipped_weapon->data == tmp->data) {
+										removeItem(p.inv, tmp);
 									}
+									tmp = tmp->next;
 								}
 
 								/* No weapon is equipped anymore. */
 								p.equipped_weapon = NULL;
 
-								/* Find the empty slot(s) in the player's inventory and
-								 * shift everything over.
-								 */
-								for (i = 0; i < p.inv_count; i++) {
-									if (p.inv[i] == NULL && p.inv[i + 1] != NULL) {
-
-										p.inv[i] = (struct Item *) malloc(sizeof(struct Item));
-										p.inv[i]->type = p.inv[i + 1]->type;
-										p.inv[i]->id = p.inv[i + 1]->id;
-										strcpy(p.inv[i]->name, p.inv[i + 1]->name);
-										strcpy(p.inv[i]->description, p.inv[i + 1]->description);
-										p.inv[i]->price = p.inv[i + 1]->price;
-										p.inv[i]->quantity = p.inv[i + 1]->quantity;
-										p.inv[i]->icon = p.inv[i + 1]->icon;
-
-										free(p.inv[i + 1]);
-										p.inv[i + 1] = NULL;
-									}
-								}
 								p.inv_count--;
 							}
 						}
@@ -673,11 +778,10 @@ int main() {
 				p.y = 232;
 				p.health = 200;
 				p.money = p.points = 0;
-				for (i = 0; i < 10; i++) {
-					free(p.inv[i]);
-					p.inv[i] = NULL;
-				}
+
+				removeAllItems(p.inv);
 				p.inv_count = 0;
+
 				p.equipped_weapon = NULL;
 				p.equipped_armor = NULL;
 				p.equipped_boots = NULL;
@@ -706,8 +810,8 @@ int main() {
 	for (i = 0; i < obj_count; i++)
 		free(objects[i]);
 
-	for (i = 0; i < p.inv_count; i++)
-		free(p.inv[i]);
+	removeAllItems(p.inv);
+	free(p.inv);
 	
     gfx_End();
     pgrm_CleanUp();
@@ -778,9 +882,16 @@ void draw_inventory(bool from_game) {
 			gfx_SetColor(COLOR_WHITE);
 			gfx_Rectangle_NoClip(41 + (i % 5) * 50, 45 + (i / 5) * 50, 38, 38);
 			gfx_Rectangle_NoClip(42 + (i % 5) * 50, 46 + (i / 5) * 50, 36, 36);
-			if (p.inv[i] != NULL)
-				gfx_ScaledTransparentSprite_NoClip(p.inv[i]->icon, 45 + (i % 5) * 50, 49 + (i / 5) * 50, 2, 2);
 		}
+
+		i = 0;
+		struct Node *tmp = p.inv->head;
+		while (tmp != NULL && i < 10) {
+			gfx_ScaledTransparentSprite_NoClip(tmp->data->icon, 45 + (i % 5) * 50, 49 + (i / 5) * 50, 2, 2);
+			tmp = tmp->next;
+			i++;
+		}
+
 
 		// Draw inventory cursor
 		gfx_Rectangle_NoClip(38 + (cursor_pos % 5) * 50, 42 + (cursor_pos / 5) * 50, 44, 44);
@@ -878,21 +989,26 @@ void draw_store(bool from_game) {
 				if (p.money >= selling_price && p.inv_count < 10) {
 					p.money -= selling_price;
 					// Check if the user already has at least one of that item
-					int item_index = player_has_item(p.inv, store_inv[selected_item + i_offset].id);
+					int item_index = getItemIndex(p.inv, store_inv[selected_item + i_offset].id);
+					dbg_printf("Item index found!\nIndex: %d\n", item_index);
 					if (item_index != -1) {
 						// If so, add to the quantity owned by the player
-						p.inv[item_index]->quantity += quantity;
+						incItemQuantity(p.inv, item_index, quantity);
 					} else {
-						// Otherwise, find the next non-empty slot and put the new item there.
-						p.inv[p.inv_count] = (struct Item *) malloc(sizeof(struct Item));
-						p.inv[p.inv_count]->type = store_inv[selected_item + i_offset].type;
-						p.inv[p.inv_count]->id = store_inv[selected_item + i_offset].id;
-						strcpy(p.inv[p.inv_count]->name, store_inv[selected_item + i_offset].name);
-						strcpy(p.inv[p.inv_count]->description, store_inv[selected_item + i_offset].description);
-						p.inv[p.inv_count]->quantity = quantity;
-						p.inv[p.inv_count]->icon = store_inv[selected_item + i_offset].icon;
+						// Otherwise, allocate memory and put the new item there.
 
-						p.equipped_weapon = p.inv[0];
+						addItem(p.inv, newItem(
+							store_inv[selected_item + i_offset].type,
+							store_inv[selected_item + i_offset].id,
+							store_inv[selected_item + i_offset].name,
+							store_inv[selected_item + i_offset].description,
+							store_inv[selected_item + i_offset].quantity,
+							store_inv[selected_item + i_offset].icon
+							));
+						
+						dbg_printf("Item added!\n");
+
+						p.equipped_weapon = p.inv->head;
 
 						p.inv_count++;
 					}
