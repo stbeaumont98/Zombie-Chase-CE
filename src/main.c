@@ -86,115 +86,6 @@ struct LinkedList {
 	struct Node *tail;
 };
 
-struct Item *newItem(uint8_t type, uint8_t id, char name[], char desc[], uint8_t quantity, gfx_sprite_t *icon) {
-	struct Item *i = (struct Item *) malloc(sizeof(struct Item));
-
-	i->type = type;
-	i->id = id;
-	strcpy(i->name, name);
-	strcpy(i->description, desc);
-	i->quantity = quantity;
-	i->icon = icon;
-
-	return i;
-}
-
-int8_t getNodeIndex(struct LinkedList *list, struct Node *item) {
-	struct Node *temp = list->head;
-	int8_t index = 0;
-	while (temp != item && temp != NULL && index < inv_size) {
-		temp = temp->next;
-		index++;
-	}
-	if (temp != NULL && index < 10)
-		return index;
-	else
-		return -1;
-}
-
-int8_t getItemIndex(struct LinkedList *list, uint8_t id) {
-	struct Node *temp = list->head;
-	int8_t index = 0;
-	while (temp->data->id != id && temp != NULL && index < inv_size) {
-		temp = temp->next;
-		index++;
-	}
-	if (temp != NULL && index < inv_size)
-		return index;
-	else
-		return -1;
-}
-
-void removeItem(struct LinkedList *list, struct Node *item) {
-	struct Node *temp;
-
-	if (list->head != NULL && list->tail != NULL) {
-		if (list->head == item && list->head != list->tail) {
-			temp = list->head;
-			list->head = list->head->next;
-			free(temp);
-		} else if (list->head == item && list->head == list->tail) {
-			free(list->head);
-			free(list->tail);
-			list->head = list->tail = NULL;
-		} else {
-			uint8_t index = getNodeIndex(list, item);
-			temp = list->head;
-			while (index > 1) {
-				temp = temp->next;
-				index--;
-			}
-			struct Node *t = temp->next;
-			temp->next = temp->next->next;
-			free(t);
-		}
-	}
-}
-
-void addItem(struct LinkedList *list, struct Item *item) {
-	struct Node *n = (struct Node *) malloc(sizeof(struct Node));
-	n->data = item;
-	n->next = NULL;
-
-	if (list->head == NULL && list->tail == NULL) {
-		list->head = n;
-		list->tail = n;
-		dbg_printf("List is not empty anymore!\n");
-	} else {
-		list->tail->next = n;
-		list->tail = list->tail->next;
-		dbg_printf("Added to list!\n");
-	}
-}
-
-void removeAllItems(struct LinkedList *list) {
-	uint8_t index = 0;
-	for (index = 0; index < inv_size; index++) {
-		removeItem(list, list->head);
-	}
-	free(list->tail);
-	list->head = list->tail = NULL;
-}
-
-void incItemQuantity(struct LinkedList *list, uint8_t index, uint8_t quantity) {
-	struct Node *temp = list->head;
-	while (index > 0) {
-		temp = temp->next;
-		index--;
-	}
-	temp->data->quantity += quantity;
-}
-
-void decItemQuantity(struct LinkedList *list, uint8_t id) {
-	uint8_t index = getItemIndex(list, id);
-	struct Node *temp = list->head;
-	while (index > 0) {
-		temp = temp->next;
-		index--;
-	}
-	temp->data->quantity--;
-}
-
 struct Target {
 	uint8_t type;
 	uint8_t id;
@@ -225,6 +116,16 @@ struct Zombie {
 };
 
 /* Function prototypes */
+
+struct Item *newItem(uint8_t type, uint8_t id, char name[], char desc[], uint8_t quantity, gfx_sprite_t *icon);
+int8_t getNodeIndex(struct LinkedList *list, struct Node *item);
+int8_t getItemIndex(struct LinkedList *list, uint8_t id);
+void removeItem(struct LinkedList *list, struct Node *item);
+void addItem(struct LinkedList *list, struct Item *item);
+void removeAllItems(struct LinkedList *list);
+void incItemQuantity(struct LinkedList *list, uint8_t index, uint8_t quantity);
+void decItemQuantity(struct LinkedList *list, uint8_t id);
+
 void draw_player(uint16_t x, uint8_t y);
 void draw_health_pack(uint16_t x, uint8_t y);
 void draw_custom_text(char* text, uint8_t color, uint16_t x, uint8_t y, int scale);
@@ -232,7 +133,6 @@ void draw_custom_int(int i, uint8_t length, uint8_t color, uint16_t x, uint8_t y
 void draw_inventory(bool from_game);
 void draw_store(bool from_game);
 void draw_fail(void);
-int player_has_item(struct Item *inventory[10], uint8_t id);
 void new_object(uint8_t id);
 
 char fail_string[] = "PRESS [MODE] TO PLAY AGAIN";
@@ -819,6 +719,116 @@ int main() {
 	return 0;
 }
 
+
+struct Item *newItem(uint8_t type, uint8_t id, char name[], char desc[], uint8_t quantity, gfx_sprite_t *icon) {
+	struct Item *i = (struct Item *) malloc(sizeof(struct Item));
+
+	i->type = type;
+	i->id = id;
+	strcpy(i->name, name);
+	strcpy(i->description, desc);
+	i->quantity = quantity;
+	i->icon = icon;
+
+	return i;
+}
+
+int8_t getNodeIndex(struct LinkedList *list, struct Node *item) {
+	struct Node *temp = list->head;
+	int8_t index = 0;
+	while (temp != item && temp != NULL && index < inv_size) {
+		temp = temp->next;
+		index++;
+	}
+	if (temp != NULL && index < 10)
+		return index;
+	else
+		return -1;
+}
+
+int8_t getItemIndex(struct LinkedList *list, uint8_t id) {
+	struct Node *temp = list->head;
+	int8_t index = 0;
+	while (temp->data->id != id && temp != NULL && index < inv_size) {
+		temp = temp->next;
+		index++;
+	}
+	if (temp != NULL && index < inv_size)
+		return index;
+	else
+		return -1;
+}
+
+void removeItem(struct LinkedList *list, struct Node *item) {
+	struct Node *temp;
+
+	if (list->head != NULL && list->tail != NULL) {
+		if (list->head == item && list->head != list->tail) {
+			temp = list->head;
+			list->head = list->head->next;
+			free(temp);
+		} else if (list->head == item && list->head == list->tail) {
+			free(list->head);
+			free(list->tail);
+			list->head = list->tail = NULL;
+		} else {
+			uint8_t index = getNodeIndex(list, item);
+			temp = list->head;
+			while (index > 1) {
+				temp = temp->next;
+				index--;
+			}
+			struct Node *t = temp->next;
+			temp->next = temp->next->next;
+			free(t);
+		}
+	}
+}
+
+void addItem(struct LinkedList *list, struct Item *item) {
+	struct Node *n = (struct Node *) malloc(sizeof(struct Node));
+	n->data = item;
+	n->next = NULL;
+
+	if (list->head == NULL && list->tail == NULL) {
+		list->head = n;
+		list->tail = n;
+		dbg_printf("List is not empty anymore!\n");
+	} else {
+		list->tail->next = n;
+		list->tail = list->tail->next;
+		dbg_printf("Added to list!\n");
+	}
+}
+
+void removeAllItems(struct LinkedList *list) {
+	uint8_t index = 0;
+	for (index = 0; index < inv_size; index++) {
+		removeItem(list, list->head);
+	}
+	free(list->tail);
+	list->head = list->tail = NULL;
+}
+
+void incItemQuantity(struct LinkedList *list, uint8_t index, uint8_t quantity) {
+	struct Node *temp = list->head;
+	while (index > 0) {
+		temp = temp->next;
+		index--;
+	}
+	temp->data->quantity += quantity;
+}
+
+void decItemQuantity(struct LinkedList *list, uint8_t id) {
+	uint8_t index = getItemIndex(list, id);
+	struct Node *temp = list->head;
+	while (index > 0) {
+		temp = temp->next;
+		index--;
+	}
+	temp->data->quantity--;
+}
+
 void draw_player(uint16_t x, uint8_t y) {
 	gfx_SetColor(COLOR_WHITE);
     gfx_FillCircle_NoClip(x + 2, y + 2, 2);
@@ -879,23 +889,36 @@ void draw_inventory(bool from_game) {
 		gfx_FillRectangle_NoClip(0, 30, 320, 3);
 
 		// Draw the inventory.
-		for (i = 0; i < 10; i++) {
+		for (i = 0; i < 12; i++) {
 			gfx_SetColor(COLOR_WHITE);
-			gfx_Rectangle_NoClip(41 + (i % 5) * 50, 45 + (i / 5) * 50, 38, 38);
-			gfx_Rectangle_NoClip(42 + (i % 5) * 50, 46 + (i / 5) * 50, 36, 36);
+			gfx_Rectangle_NoClip(166 + (i % 3) * 50, 42 + (i / 3) * 50, 38, 38);
+			gfx_Rectangle_NoClip(167 + (i % 3) * 50, 43 + (i / 3) * 50, 36, 36);
 		}
 
+		// Draw the inventory items.
 		i = 0;
 		struct Node *tmp = p.inv->head;
-		while (tmp != NULL && i < 10) {
-			gfx_ScaledTransparentSprite_NoClip(tmp->data->icon, 45 + (i % 5) * 50, 49 + (i / 5) * 50, 2, 2);
+		while (tmp != NULL && i < inv_size) {
+			gfx_ScaledTransparentSprite_NoClip(tmp->data->icon, 170 + (i % 3) * 50, 46 + (i / 3) * 50, 2, 2);
 			tmp = tmp->next;
 			i++;
 		}
 
 
-		// Draw inventory cursor
-		gfx_Rectangle_NoClip(38 + (cursor_pos % 5) * 50, 42 + (cursor_pos / 5) * 50, 44, 44);
+		// Draw inventory cursor.
+		gfx_Rectangle_NoClip(163 + (cursor_pos % 3) * 50, 39 + (cursor_pos / 3) * 50, 44, 44);
+
+		// Draw the player's equipped items
+		gfx_Rectangle_NoClip(22, 60, 55, 55);
+		gfx_Rectangle_NoClip(23, 61, 53, 53);
+		gfx_Rectangle_NoClip(86, 60, 55, 55);
+		gfx_Rectangle_NoClip(87, 61, 53, 53);
+		gfx_Rectangle_NoClip(22, 124, 55, 55);
+		gfx_Rectangle_NoClip(23, 125, 53, 53);
+
+		gfx_ScaledTransparentSprite_NoClip(b_frame, 27, 65, 3, 3);
+		gfx_ScaledTransparentSprite_NoClip(f_frame, 27, 129, 3, 3);
+		gfx_ScaledTransparentSprite_NoClip(h1_frame, 91, 65, 3, 3);
 
 		// Check for key presses.
 		if (can_press) {
@@ -911,16 +934,16 @@ void draw_inventory(bool from_game) {
 			}
 
 			// The arrows control the player's selection.
-			if (kb_Data[7] & kb_Down && cursor_pos < 5) {
-				cursor_pos += 5;
+			if (kb_Data[7] & kb_Down && cursor_pos < 9) {
+				cursor_pos += 3;
 				can_press = false;
-			} else if (kb_Data[7] & kb_Up && cursor_pos > 4) {
-				cursor_pos -= 5;
+			} else if (kb_Data[7] & kb_Up && cursor_pos > 2) {
+				cursor_pos -= 3;
 				can_press = false;
 			} else if (kb_Data[7] & kb_Left && cursor_pos > 0) {
 				cursor_pos--;
 				can_press = false;
-			} else if (kb_Data[7] & kb_Right && cursor_pos < 9) {
+			} else if (kb_Data[7] & kb_Right && cursor_pos < 11) {
 				cursor_pos++;
 				can_press = false;
 			}
@@ -1070,15 +1093,6 @@ void draw_store(bool from_game) {
 void draw_fail(void) {
     gfx_ScaledTransparentSprite_NoClip(fail, 73, 76, 6, 6);
 	draw_custom_text(fail_string, COLOR_WHITE, 57, 148, 2);
-}
-
-int player_has_item(struct Item *inventory[10], uint8_t id) {
-	int i;
-	for (i = 0; i < 10; i++) {
-		if (inventory[i]->id == id)
-			return i;
-	}
-	return -1;
 }
 
 void new_object(uint8_t id) {

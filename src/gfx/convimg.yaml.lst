@@ -52,6 +52,12 @@ lw_boots.h
 lw_boots.c
 hw_boots.h
 hw_boots.c
+b_frame.h
+b_frame.c
+f_frame.h
+f_frame.c
+h1_frame.h
+h1_frame.c
 unknown.h
 unknown.c
 gfx.h
