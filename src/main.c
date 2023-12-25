@@ -365,6 +365,8 @@ int main() {
 						gfx_FillCircle(objects[i]->x, objects[i]->y, objects[i]->radius);
 						gfx_SwapDraw();
 
+						dbg_printf("Test 1\n");
+
 						int distance;
 
 						/* Check if zombies are in the blast radius. */
@@ -380,21 +382,29 @@ int main() {
 							}
 						}
 
+						dbg_printf("Test 2\n");
+
 						/* Check if the player is in the blast radius. */
 						distance = sqrt(pow(objects[i]->x - p.x + 2, 2) + pow(objects[i]->y - p.y + 2, 2));
 						if (distance <= objects[i]->radius)
 							p.health -= (p.health / 2);
+
+						
+						dbg_printf("Test 3\n");
 						
 					}
 
 					/* Take care of the dead object. */
-					free(objects[i]);
+					free(objects[i]); // Why does the game crash when freeing this object??
+					dbg_printf("Test 4\n");
 					if (obj_count <= 1)
 						objects[i] = NULL;
 					else {
 						objects[i] = objects[--obj_count];
 						objects[obj_count] = NULL;
 					}
+					
+					dbg_printf("Test 5\n");
 				}
 			}
 		}
@@ -719,7 +729,6 @@ int main() {
 	return 0;
 }
 
-
 struct Item *newItem(uint8_t type, uint8_t id, char name[], char desc[], uint8_t quantity, gfx_sprite_t *icon) {
 	struct Item *i = (struct Item *) malloc(sizeof(struct Item));
 
@@ -916,9 +925,11 @@ void draw_inventory(bool from_game) {
 		gfx_Rectangle_NoClip(22, 124, 55, 55);
 		gfx_Rectangle_NoClip(23, 125, 53, 53);
 
-		gfx_ScaledTransparentSprite_NoClip(b_frame, 27, 65, 3, 3);
-		gfx_ScaledTransparentSprite_NoClip(f_frame, 27, 129, 3, 3);
+		gfx_ScaledTransparentSprite_NoClip(p.equipped_armor != NULL ? b_frame : p.equipped_armor->data->icon, 27, 65, 3, 3);
+		gfx_ScaledTransparentSprite_NoClip(p.equipped_boots != NULL ? f_frame : p.equipped_boots->data->icon, 27, 129, 3, 3);
 		gfx_ScaledTransparentSprite_NoClip(h1_frame, 91, 65, 3, 3);
+		if (p.equipped_weapon != NULL)
+			gfx_ScaledTransparentSprite_NoClip(p.equipped_weapon->data->icon, 91, 65, 3, 3);
 
 		// Check for key presses.
 		if (can_press) {
