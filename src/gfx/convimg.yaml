@@ -45,6 +45,9 @@ converts:
       - ff_armor.png
       - lw_boots.png
       - hw_boots.png
+      - b_frame.png
+      - f_frame.png
+      - h1_frame.png
       - unknown.png
 
 outputs:

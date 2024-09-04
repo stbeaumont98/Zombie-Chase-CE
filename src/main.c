@@ -8,6 +8,8 @@
 #include <string.h>
 #include <tice.h>
 
+#include <debug.h>
+
 /* Shared libraries */
 #include <graphx.h>
 #include <keypadc.h>
@@ -52,12 +54,13 @@ int main() {
     p.y = 232;
     p.health = 200;
 	p.infected = false;
-	p.money = 0;
+	p.money = 500;
 	p.points = 0;
-	for (i = 0; i < 10; i++)
-		p.inv[i] = NULL;
-	
-	p.inv_count = 0;
+
+	p.inv = (struct LinkedList *) malloc(sizeof(struct LinkedList));
+	removeAllItems(p.inv);
+
+	inv_size = 0;
 	p.equipped_weapon = p.equipped_armor = p.equipped_boots = NULL;
 
 	/* Initialize the objects array. */
@@ -142,16 +145,16 @@ int main() {
 					p.health = 0;
 			}
         }
-        
-        draw_player(p.x, p.y);
-		draw_health_pack(hp.x, hp.y);
-
+		
 		/* Draw the players money and timer */
         draw_custom_text("$", COLOR_WHITE, 2, 2, 2);
 		draw_custom_int(p.money, 1, COLOR_WHITE, 10, 1, 2);
 		draw_custom_int(p.points / 60, 2, COLOR_WHITE, 2, 226, 2);
 		draw_custom_text(":", COLOR_WHITE, 18, 226, 2);
 		draw_custom_int(p.points % 60, 2, COLOR_WHITE, 22, 226, 2);
+        
+        draw_player(p.x, p.y);
+		draw_health_pack(hp.x, hp.y);
 
 		/* Draw the player's equipped items.
 		 * TODO: Make improvements on visuals.
@@ -232,6 +235,8 @@ int main() {
 						gfx_FillCircle(objects[i]->x, objects[i]->y, objects[i]->radius);
 						gfx_SwapDraw();
 
+						dbg_printf("Test 1\n");
+
 						int distance;
 
 						/* Check if zombies are in the blast radius. */
@@ -247,21 +252,29 @@ int main() {
 							}
 						}
 
+						dbg_printf("Test 2\n");
+
 						/* Check if the player is in the blast radius. */
 						distance = sqrt(pow(objects[i]->x - p.x + 2, 2) + pow(objects[i]->y - p.y + 2, 2));
 						if (distance <= objects[i]->radius)
 							p.health -= (p.health / 2);
+
+						
+						dbg_printf("Test 3\n");
 						
 					}
 
 					/* Take care of the dead object. */
-					free(objects[i]);
+					free(objects[i]); // Why does the game crash when freeing this object??
+					dbg_printf("Test 4\n");
 					if (obj_count <= 1)
 						objects[i] = NULL;
 					else {
 						objects[i] = objects[--obj_count];
 						objects[obj_count] = NULL;
 					}
+					
+					dbg_printf("Test 5\n");
 				}
 			}
 		}
@@ -323,7 +336,7 @@ int main() {
 						z[i].y -= 2;
 
 					/* Change the direction the zombie is facing based on where
-					 * it is relative to the player. 
+					 * it is relative to its target. 
 					 */
 					if (z[i].x == z[i].target->x && z[i].y < z[i].target->y)
 						z_dir = 0;
@@ -418,10 +431,10 @@ int main() {
 				}
 				if (kb_Data[1] & kb_2nd && p.equipped_weapon != NULL) {
 					/* Do an action based on what weapon is equipped. */
-					if (p.equipped_weapon->type == TYPE_MELEE) {
+					if (p.equipped_weapon->data->type == TYPE_MELEE) {
 						uint8_t swing_radius;
 
-						if (p.equipped_weapon->id == ID_MACHETE)
+						if (p.equipped_weapon->data->id == ID_MACHETE)
 							swing_radius = 10;
 						else
 							swing_radius = 20;
@@ -446,7 +459,7 @@ int main() {
 						if (objects[obj_count] == NULL) {
 
 							/* Add a new object to the objects array. */
-							new_object(p.equipped_weapon->id);
+							new_object(p.equipped_weapon->data->id);
 
 							/* Set this new object as the target for a random amount of zombies. */
 							for (i = rand() % zombie_count; i < zombie_count; i++) {
@@ -461,42 +474,24 @@ int main() {
 								obj_count = 15;
 
 							/* Decrease the quantity of the players equipped weapon and check if they've run out. */
-							if (--p.equipped_weapon->quantity == 0) {
+							if (--p.equipped_weapon->data->quantity == 0) {
 								/* If they've run out of the item that's in their hands,
 								 * remove that item from the inventory. 
 								 */
 
-								/* Find the item in inventory and set it to NULL. */
-								for (i = 0; i < p.inv_count; i++) {
-									if (p.equipped_weapon == p.inv[i]) {
-										free(p.inv[i]);
-										p.inv[i] = NULL;
+								/* Find the item in inventory and remove it from player inventory. */
+								struct Node *tmp = p.inv->head;
+								while (tmp != NULL) {
+									if (p.equipped_weapon->data == tmp->data) {
+										removeItem(p.inv, tmp);
 									}
+									tmp = tmp->next;
 								}
 
 								/* No weapon is equipped anymore. */
 								p.equipped_weapon = NULL;
 
-								/* Find the empty slot(s) in the player's inventory and
-								 * shift everything over.
-								 */
-								for (i = 0; i < p.inv_count; i++) {
-									if (p.inv[i] == NULL && p.inv[i + 1] != NULL) {
-
-										p.inv[i] = (struct Item *) malloc(sizeof(struct Item));
-										p.inv[i]->type = p.inv[i + 1]->type;
-										p.inv[i]->id = p.inv[i + 1]->id;
-										strcpy(p.inv[i]->name, p.inv[i + 1]->name);
-										strcpy(p.inv[i]->description, p.inv[i + 1]->description);
-										p.inv[i]->price = p.inv[i + 1]->price;
-										p.inv[i]->quantity = p.inv[i + 1]->quantity;
-										p.inv[i]->icon = p.inv[i + 1]->icon;
-
-										free(p.inv[i + 1]);
-										p.inv[i + 1] = NULL;
-									}
-								}
-								p.inv_count--;
+								inv_size--;
 							}
 						}
 					}
@@ -564,11 +559,10 @@ int main() {
 				p.y = 232;
 				p.health = 200;
 				p.money = p.points = 0;
-				for (i = 0; i < 10; i++) {
-					free(p.inv[i]);
-					p.inv[i] = NULL;
-				}
-				p.inv_count = 0;
+
+				removeAllItems(p.inv);
+				inv_size = 0;
+
 				p.equipped_weapon = NULL;
 				p.equipped_armor = NULL;
 				p.equipped_boots = NULL;
@@ -597,14 +591,394 @@ int main() {
 	for (i = 0; i < obj_count; i++)
 		free(objects[i]);
 
-	for (i = 0; i < p.inv_count; i++)
-		free(p.inv[i]);
+	removeAllItems(p.inv);
+	free(p.inv);
 	
     gfx_End();
     pgrm_CleanUp();
 	return 0;
 }
 
+<<<<<<< HEAD
+=======
+struct Item *newItem(uint8_t type, uint8_t id, char name[], char desc[], uint8_t quantity, gfx_sprite_t *icon) {
+	struct Item *i = (struct Item *) malloc(sizeof(struct Item));
+
+	i->type = type;
+	i->id = id;
+	strcpy(i->name, name);
+	strcpy(i->description, desc);
+	i->quantity = quantity;
+	i->icon = icon;
+
+	return i;
+}
+
+int8_t getNodeIndex(struct LinkedList *list, struct Node *item) {
+	struct Node *temp = list->head;
+	int8_t index = 0;
+	while (temp != item && temp != NULL && index < inv_size) {
+		temp = temp->next;
+		index++;
+	}
+	if (temp != NULL && index < 10)
+		return index;
+	else
+		return -1;
+}
+
+int8_t getItemIndex(struct LinkedList *list, uint8_t id) {
+	struct Node *temp = list->head;
+	int8_t index = 0;
+	while (temp->data->id != id && temp != NULL && index < inv_size) {
+		temp = temp->next;
+		index++;
+	}
+	if (temp != NULL && index < inv_size)
+		return index;
+	else
+		return -1;
+}
+
+void removeItem(struct LinkedList *list, struct Node *item) {
+	struct Node *temp;
+
+	if (list->head != NULL && list->tail != NULL) {
+		if (list->head == item && list->head != list->tail) {
+			temp = list->head;
+			list->head = list->head->next;
+			free(temp);
+		} else if (list->head == item && list->head == list->tail) {
+			free(list->head);
+			free(list->tail);
+			list->head = list->tail = NULL;
+		} else {
+			uint8_t index = getNodeIndex(list, item);
+			temp = list->head;
+			while (index > 1) {
+				temp = temp->next;
+				index--;
+			}
+			struct Node *t = temp->next;
+			temp->next = temp->next->next;
+			free(t);
+		}
+	}
+}
+
+void addItem(struct LinkedList *list, struct Item *item) {
+	struct Node *n = (struct Node *) malloc(sizeof(struct Node));
+	n->data = item;
+	n->next = NULL;
+
+	if (list->head == NULL && list->tail == NULL) {
+		list->head = n;
+		list->tail = n;
+		dbg_printf("List is not empty anymore!\n");
+	} else {
+		list->tail->next = n;
+		list->tail = list->tail->next;
+		dbg_printf("Added to list!\n");
+	}
+}
+
+void removeAllItems(struct LinkedList *list) {
+	uint8_t index = 0;
+	for (index = 0; index < inv_size; index++) {
+		removeItem(list, list->head);
+	}
+	free(list->tail);
+	list->head = list->tail = NULL;
+}
+
+void incItemQuantity(struct LinkedList *list, uint8_t index, uint8_t quantity) {
+	struct Node *temp = list->head;
+	while (index > 0) {
+		temp = temp->next;
+		index--;
+	}
+	temp->data->quantity += quantity;
+}
+
+void decItemQuantity(struct LinkedList *list, uint8_t id) {
+	uint8_t index = getItemIndex(list, id);
+	struct Node *temp = list->head;
+	while (index > 0) {
+		temp = temp->next;
+		index--;
+	}
+	temp->data->quantity--;
+}
+
+void draw_player(uint16_t x, uint8_t y) {
+	gfx_SetColor(COLOR_WHITE);
+    gfx_FillCircle_NoClip(x + 2, y + 2, 2);
+}
+
+void draw_health_pack(uint16_t x, uint8_t y) {
+    gfx_SetColor(COLOR_RED);
+    gfx_FillRectangle_NoClip(x + 2, y, 2, 6);
+    gfx_FillRectangle_NoClip(x, y + 2, 6, 2);
+}
+
+void draw_custom_text(char* text, uint8_t color, uint16_t x, uint8_t y, int scale) {
+	gfx_SetTextFGColor(color);
+    gfx_SetTextBGColor(COLOR_RED);
+    gfx_SetTextTransparentColor(COLOR_RED);
+    gfx_SetTextXY(x, y);
+	gfx_SetTextScale(scale, scale);
+
+	if (x + strlen(text) * 4 * scale > GFX_LCD_WIDTH) {
+		char tmp[0xFF];
+		strcpy(tmp, text);
+		char *token = strtok(tmp, "|");
+		while (token != NULL) {
+			gfx_PrintString(token);
+			token = strtok(NULL, "|");
+			y += (6 * scale);
+			gfx_SetTextXY(x, y);
+		}
+	} else 
+		gfx_PrintString(text);
+}
+
+void draw_custom_int(int i, uint8_t length, uint8_t color, uint16_t x, uint8_t y, int scale) {
+	gfx_SetTextFGColor(color);
+    gfx_SetTextBGColor(COLOR_RED);
+    gfx_SetTextTransparentColor(COLOR_RED);
+    gfx_SetTextXY(x, y);
+	gfx_SetTextScale(scale, scale);
+	gfx_PrintInt(i, length);
+}
+
+void draw_inventory(bool from_game) {
+	// Draw the player's inventory.
+	uint8_t i;
+	can_press = false;
+	bool in_loop = true;
+
+	uint8_t cursor_pos = 0;
+
+	while (in_loop) {
+		kb_Scan();
+		// Black background.
+		gfx_FillScreen(COLOR_BLACK);
+		draw_custom_text("$", COLOR_WHITE, 10, 3, 4);
+		draw_custom_int(p.money, 1, COLOR_WHITE, 26, 2, 4);
+		draw_custom_text("INVENTORY", COLOR_WHITE, 165, 3, 4);
+		gfx_SetColor(COLOR_WHITE);
+		gfx_FillRectangle_NoClip(0, 30, 320, 3);
+
+		// Draw the inventory.
+		for (i = 0; i < 12; i++) {
+			gfx_SetColor(COLOR_WHITE);
+			gfx_Rectangle_NoClip(166 + (i % 3) * 50, 42 + (i / 3) * 50, 38, 38);
+			gfx_Rectangle_NoClip(167 + (i % 3) * 50, 43 + (i / 3) * 50, 36, 36);
+		}
+
+		// Draw the inventory items.
+		i = 0;
+		struct Node *tmp = p.inv->head;
+		while (tmp != NULL && i < inv_size) {
+			gfx_ScaledTransparentSprite_NoClip(tmp->data->icon, 170 + (i % 3) * 50, 46 + (i / 3) * 50, 2, 2);
+			tmp = tmp->next;
+			i++;
+		}
+
+
+		// Draw inventory cursor.
+		gfx_Rectangle_NoClip(163 + (cursor_pos % 3) * 50, 39 + (cursor_pos / 3) * 50, 44, 44);
+
+		// Draw the player's equipped items
+		gfx_Rectangle_NoClip(22, 60, 55, 55);
+		gfx_Rectangle_NoClip(23, 61, 53, 53);
+		gfx_Rectangle_NoClip(86, 60, 55, 55);
+		gfx_Rectangle_NoClip(87, 61, 53, 53);
+		gfx_Rectangle_NoClip(22, 124, 55, 55);
+		gfx_Rectangle_NoClip(23, 125, 53, 53);
+
+		gfx_ScaledTransparentSprite_NoClip(p.equipped_armor != NULL ? b_frame : p.equipped_armor->data->icon, 27, 65, 3, 3);
+		gfx_ScaledTransparentSprite_NoClip(p.equipped_boots != NULL ? f_frame : p.equipped_boots->data->icon, 27, 129, 3, 3);
+		gfx_ScaledTransparentSprite_NoClip(h1_frame, 91, 65, 3, 3);
+		if (p.equipped_weapon != NULL)
+			gfx_ScaledTransparentSprite_NoClip(p.equipped_weapon->data->icon, 91, 65, 3, 3);
+
+		// Check for key presses.
+		if (can_press) {
+
+			// Buttons to break the loop.
+			if (kb_Data[1] & kb_Mode || kb_Data[6] & kb_Clear)
+				in_loop = false;
+
+			// Action controls.
+			if (kb_Data[1] & kb_2nd || kb_Data[6] & kb_Enter) {
+				// Equip an item
+				can_press = false;
+			}
+
+			// The arrows control the player's selection.
+			if (kb_Data[7] & kb_Down && cursor_pos < 9) {
+				cursor_pos += 3;
+				can_press = false;
+			} else if (kb_Data[7] & kb_Up && cursor_pos > 2) {
+				cursor_pos -= 3;
+				can_press = false;
+			} else if (kb_Data[7] & kb_Left && cursor_pos > 0) {
+				cursor_pos--;
+				can_press = false;
+			} else if (kb_Data[7] & kb_Right && cursor_pos < 11) {
+				cursor_pos++;
+				can_press = false;
+			}
+
+			// Open the store from inventory.
+			if (kb_Data[1] & kb_Del) {
+				if (!from_game)
+					in_loop = false;
+				else {
+					draw_store(false);
+					can_press = false;
+				}
+			}
+		}
+
+		if (!kb_AnyKey()) can_press = true;
+						
+		gfx_SwapDraw();
+	}
+}
+
+void draw_store(bool from_game) {
+	// Draw the store.
+	uint8_t i, quantity = 1;
+	int8_t i_offset = 0, selected_item = 0;
+	uint16_t selling_price;
+	can_press = false;
+	bool in_loop = true;
+	while (in_loop) {
+		kb_Scan();
+		// Black background.
+		gfx_FillScreen(COLOR_BLACK);
+		draw_custom_text("$", COLOR_WHITE, 10, 3, 4);
+		draw_custom_int(p.money, 1, COLOR_WHITE, 26, 2, 4);
+		draw_custom_text("STORE", COLOR_WHITE, 229, 3, 4);
+		gfx_SetColor(COLOR_WHITE);
+		gfx_FillRectangle_NoClip(0, 30, 320, 3);
+
+		for (i = 0; i < 6; i++)
+			draw_custom_text(store_inv[i + i_offset].name, COLOR_WHITE, 15, 40 + i * 24, (i == selected_item ? 3 : 2));
+		
+		// Draw the box with the icon inside.
+		gfx_SetColor(COLOR_WHITE);
+		gfx_Rectangle_NoClip(205, 53, 59, 59);
+		gfx_Rectangle_NoClip(206, 54, 57, 57);
+		gfx_ScaledTransparentSprite_NoClip(store_inv[selected_item + i_offset].icon, 212, 60, 3, 3);
+
+		// Draw the quantity 
+		draw_custom_text("QTY: <   >", COLOR_WHITE, 198, 118, 2);
+		draw_custom_int(quantity, 2, COLOR_WHITE, 248, 118, 2);
+				
+		// Calculate the selling price and display it underneath the quantity.
+		selling_price = store_inv[selected_item + i_offset].price * quantity;
+		draw_custom_text("$", p.money < selling_price ? COLOR_DARK_RED : COLOR_GREEN, 217, 137, 3);
+		draw_custom_int(selling_price, 1, p.money < selling_price ? COLOR_DARK_RED : COLOR_GREEN, 229, 136, 3);
+
+		gfx_Rectangle_NoClip(25, 189, 270, 40);
+		draw_custom_text(store_inv[selected_item + i_offset].description, COLOR_WHITE, 28, 190, 2);
+
+		// Check for key presses.
+		if (can_press) {
+
+			// Buttons to break the loop.
+			if (kb_Data[1] & kb_Del || kb_Data[6] & kb_Clear)
+				in_loop = false;
+
+			// Action controls
+			if (kb_Data[1] & kb_2nd || kb_Data[6] & kb_Enter) {
+				if (p.money >= selling_price && inv_size < 10) {
+					p.money -= selling_price;
+					// Check if the user already has at least one of that item
+					int item_index = getItemIndex(p.inv, store_inv[selected_item + i_offset].id);
+					dbg_printf("Item index found!\nIndex: %d\n", item_index);
+					if (item_index != -1) {
+						// If so, add to the quantity owned by the player
+						incItemQuantity(p.inv, item_index, quantity);
+					} else {
+						// Otherwise, allocate memory and put the new item there.
+
+						addItem(p.inv, newItem(
+							store_inv[selected_item + i_offset].type,
+							store_inv[selected_item + i_offset].id,
+							store_inv[selected_item + i_offset].name,
+							store_inv[selected_item + i_offset].description,
+							quantity,
+							store_inv[selected_item + i_offset].icon
+							));
+						
+						dbg_printf("Item added!\n");
+
+						p.equipped_weapon = p.inv->head;
+
+						inv_size++;
+					}
+				}
+				can_press = false;
+			}
+
+			// Up and down controls the menu option, left and right controls the quantity of the item.
+			if (kb_Data[7] & kb_Down) {
+				selected_item++;
+				quantity = 1;
+				can_press = false;
+			} else if (kb_Data[7] & kb_Up) {
+				selected_item--;
+				quantity = 1;
+				can_press = false;
+			} else if (kb_Data[7] & kb_Left) {
+				if (quantity > 1)
+					quantity--;
+				can_press = false;
+			} else if (kb_Data[7] & kb_Right) {
+				if (quantity < store_inv[selected_item + i_offset].quantity)
+					quantity++;
+				can_press = false;
+			}
+
+			// Open inventory from the store.
+			if (kb_Data[1] & kb_Mode) {
+				if (!from_game)
+					in_loop = false;
+				else {
+					draw_inventory(false);
+					can_press = false;
+				}
+			}
+		}
+
+		if (selected_item < 0 && i_offset > 0) {
+			i_offset--;
+			selected_item = 0;
+		} else if (selected_item > 5 && i_offset < 10) {
+			i_offset++;
+			selected_item = 5;
+		} else if (selected_item < 0) {
+			selected_item = 0;
+		} else if (selected_item > 5) {
+			selected_item = 5;
+		}
+
+		if (!kb_AnyKey()) can_press = true;
+						
+		gfx_SwapDraw();
+	}
+}
+
+void draw_fail(void) {
+    gfx_ScaledTransparentSprite_NoClip(fail, 73, 76, 6, 6);
+	draw_custom_text(fail_string, COLOR_WHITE, 57, 148, 2);
+}
+
+>>>>>>> cf266d02e1367cabd2bbc472d73e27ffba8f9410
 void new_object(uint8_t id) {
 	objects[obj_count] = (struct Target *) malloc(sizeof(struct Target));
 	objects[obj_count]->type = (id == ID_GRENADE || id == ID_C4 || id == ID_LAND_MINE);

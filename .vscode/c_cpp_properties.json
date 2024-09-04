@@ -1,21 +1,30 @@
 {
     "configurations": [
         {
-            "name": "Win32",
+            "name": "CEdev",
             "includePath": [
-                "${workspaceFolder}/**",
-                "C:/CEdev/**"
+                "c:/Users/spenc/Documents/Zombie-Chase-CE/**",
+                "C:/CEdev/include/**"
             ],
             "defines": [
                 "_DEBUG",
                 "UNICODE",
                 "_UNICODE"
             ],
-            "windowsSdkVersion": "10.0.19041.0",
-            "compilerPath": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/bin/Hostx64/x64/cl.exe",
-            "cStandard": "c17",
+            "compilerPath": "C:\\CEdev\\bin\\ez80-clang.exe",
+            "intelliSenseMode": "windows-clang-x64",
             "cppStandard": "c++17",
-            "intelliSenseMode": "windows-msvc-x64"
+            "cStandard": "c17",
+            "compilerPathInCppPropertiesJson": "C:/CEdev/bin/ez80-clang.exe",
+            "mergeConfigurations": false,
+            "browse": {
+                "path": [
+                    "c:/Users/spenc/Documents/Zombie-Chase-CE/**",
+                    "C:/CEdev/include/**",
+                    "${workspaceFolder}"
+                ],
+                "limitSymbolsToIncludedHeaders": true
+            }
         }
     ],
     "version": 4

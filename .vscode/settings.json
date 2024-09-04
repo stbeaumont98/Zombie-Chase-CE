@@ -1,6 +1,3 @@
 {
-    "files.associations": {
-        "stdint.h": "c",
-        "zombie_font.h": "c"
-    }
+    "cmake.configureOnOpen": true
 }
