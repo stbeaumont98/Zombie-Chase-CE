@@ -60,7 +60,7 @@ void draw_store(bool from_game, struct Player *p) {
 
 			// Action controls
 			if (kb_Data[1] & kb_2nd || kb_Data[6] & kb_Enter) {
-				if (p->money >= selling_price && inv_size < 12) {
+				if (p->money >= selling_price && p->inv->size < 12) {
 					p->money -= selling_price;
 					// Check if the user already has at least one of that item
 					int item_index = getItemIndex(p->inv, store_inv[selected_item + i_offset].id);
@@ -84,7 +84,7 @@ void draw_store(bool from_game, struct Player *p) {
 
 						p->equipped_weapon = p->inv->head;
 
-						inv_size++;
+						p->inv->size++;
 					}
 				}
 				can_press = false;

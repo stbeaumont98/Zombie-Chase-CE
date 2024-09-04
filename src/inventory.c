@@ -1,4 +1,3 @@
-
 #include <stdint.h>
 
 #include <graphx.h>
@@ -38,7 +37,7 @@ void draw_inventory(bool from_game, struct Player *p) {
 		// Draw the inventory items.
 		i = 0;
 		struct Node *tmp = p->inv->head;
-		while (tmp != NULL && i < inv_size) {
+		while (tmp != NULL && i < p->inv->size) {
 			gfx_ScaledTransparentSprite_NoClip(tmp->data->icon, 170 + (i % 3) * 50, 46 + (i / 3) * 50, 2, 2);
 			tmp = tmp->next;
 			i++;

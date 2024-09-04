@@ -4,7 +4,6 @@
 #include "types.h"
 #include "gfx\gfx.h"
 
-
 static struct Item store_inv[16] = {		// Items that can be bought in the store.
 	{TYPE_MELEE, ID_MACHETE, "Machete", "This one-handed weapon can be|swung all around to kill zombies|within its reach.", 20, 5, machete},
 	{TYPE_MELEE, ID_KATANA, "Katana", "Like the machete, this two-handed|weapon can be swung around to|kill zombies, but its range is wider.", 50, 3, katana},

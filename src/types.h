@@ -96,6 +96,7 @@ struct Node {
 struct LinkedList {
 	struct Node *head;
 	struct Node *tail;
+    uint8_t size;
 };
 
 struct Item *newItem(uint8_t type, uint8_t id, char name[], char desc[], uint8_t quantity, gfx_sprite_t *icon);

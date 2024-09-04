@@ -23,7 +23,7 @@ struct Item *newItem(uint8_t type, uint8_t id, char name[], char desc[], uint8_t
 int8_t getNodeIndex(struct LinkedList *list, struct Node *item) {
 	struct Node *temp = list->head;
 	int8_t index = 0;
-	while (temp != item && temp != NULL && index < inv_size) {
+	while (temp != item && temp != NULL && index < list->size) {
 		temp = temp->next;
 		index++;
 	}
@@ -36,11 +36,11 @@ int8_t getNodeIndex(struct LinkedList *list, struct Node *item) {
 int8_t getItemIndex(struct LinkedList *list, uint8_t id) {
 	struct Node *temp = list->head;
 	int8_t index = 0;
-	while (temp->data->id != id && temp != NULL && index < inv_size) {
+	while (temp->data->id != id && temp != NULL && index < list->size) {
 		temp = temp->next;
 		index++;
 	}
-	if (temp != NULL && index < inv_size)
+	if (temp != NULL && index < list->size)
 		return index;
 	else
 		return -1;
@@ -90,7 +90,7 @@ void addItem(struct LinkedList *list, struct Item *item) {
 
 void removeAllItems(struct LinkedList *list) {
 	uint8_t index = 0;
-	for (index = 0; index < inv_size; index++) {
+	for (index = 0; index < list->size; index++) {
 		removeItem(list, list->head);
 	}
 	free(list->tail);

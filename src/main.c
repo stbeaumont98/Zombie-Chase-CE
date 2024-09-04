@@ -60,7 +60,7 @@ int main() {
 	p.inv = (struct LinkedList *) malloc(sizeof(struct LinkedList));
 	removeAllItems(p.inv);
 
-	inv_size = 0;
+	p.inv->size = 0;
 	p.equipped_weapon = p.equipped_armor = p.equipped_boots = NULL;
 
 	/* Initialize the objects array. */
@@ -491,7 +491,7 @@ int main() {
 								/* No weapon is equipped anymore. */
 								p.equipped_weapon = NULL;
 
-								inv_size--;
+								p.inv->size--;
 							}
 						}
 					}
@@ -561,7 +561,7 @@ int main() {
 				p.money = p.points = 0;
 
 				removeAllItems(p.inv);
-				inv_size = 0;
+				p.inv->size = 0;
 
 				p.equipped_weapon = NULL;
 				p.equipped_armor = NULL;
