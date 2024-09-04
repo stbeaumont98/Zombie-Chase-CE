@@ -5,6 +5,8 @@
 #include <graphx.h>
 #include <keypadc.h>
 
+#include <debug.h>
+
 #include "types.h"
 #include "draw.h"
 #include "inventory.h"
@@ -13,7 +15,9 @@
 
 void draw_store(bool from_game, struct Player *p) {
 	// Draw the store.
-	int i, i_offset = 0, selected_item = 0, quantity = 1, selling_price;
+    uint8_t i, quantity = 1;
+	int8_t i_offset = 0, selected_item = 0;
+	uint16_t selling_price;
 	bool can_press = false;
 	bool in_loop = true;
 	while (in_loop) {
@@ -56,26 +60,31 @@ void draw_store(bool from_game, struct Player *p) {
 
 			// Action controls
 			if (kb_Data[1] & kb_2nd || kb_Data[6] & kb_Enter) {
-				if (p->money >= selling_price && p->inv_count < 10) {
+				if (p->money >= selling_price && inv_size < 12) {
 					p->money -= selling_price;
 					// Check if the user already has at least one of that item
-					int item_index = player_has_item(p->inv, store_inv[selected_item + i_offset].id);
+					int item_index = getItemIndex(p->inv, store_inv[selected_item + i_offset].id);
+					dbg_printf("Item index found!\nIndex: %d\n", item_index);
 					if (item_index != -1) {
 						// If so, add to the quantity owned by the player
-						p->inv[item_index]->quantity += quantity;
+						incItemQuantity(p->inv, item_index, quantity);
 					} else {
-						// Otherwise, find the next non-empty slot and put the new item there.
-						p->inv[p->inv_count] = (struct Item *) malloc(sizeof(struct Item));
-						p->inv[p->inv_count]->type = store_inv[selected_item + i_offset].type;
-						p->inv[p->inv_count]->id = store_inv[selected_item + i_offset].id;
-						strcpy(p->inv[p->inv_count]->name, store_inv[selected_item + i_offset].name);
-						strcpy(p->inv[p->inv_count]->description, store_inv[selected_item + i_offset].description);
-						p->inv[p->inv_count]->quantity = quantity;
-						p->inv[p->inv_count]->icon = store_inv[selected_item + i_offset].icon;
+						// Otherwise, allocate memory and put the new item there.
 
-						p->equipped_weapon = p->inv[0];
+						addItem(p->inv, newItem(
+							store_inv[selected_item + i_offset].type,
+							store_inv[selected_item + i_offset].id,
+							store_inv[selected_item + i_offset].name,
+							store_inv[selected_item + i_offset].description,
+							quantity,
+							store_inv[selected_item + i_offset].icon
+							));
+						
+						dbg_printf("Item added!\n");
 
-						p->inv_count++;
+						p->equipped_weapon = p->inv->head;
+
+						inv_size++;
 					}
 				}
 				can_press = false;

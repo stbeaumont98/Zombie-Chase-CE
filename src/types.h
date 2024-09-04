@@ -75,11 +75,10 @@ struct Player {
 	bool infected;
 	uint16_t money;
 	uint16_t points;
-	struct Item *inv[10];
-	uint8_t inv_count;
-	struct Item *equipped_weapon;
-	struct Item *equipped_armor;
-	struct Item *equipped_boots;
+	struct LinkedList *inv;
+	struct Node *equipped_weapon;
+	struct Node *equipped_armor;
+	struct Node *equipped_boots;
 };
 
 struct Zombie {
@@ -88,5 +87,24 @@ struct Zombie {
 	struct Target *target;
 	bool alive;
 };
+
+struct Node {
+	struct Item *data;
+	struct Node *next;
+};
+
+struct LinkedList {
+	struct Node *head;
+	struct Node *tail;
+};
+
+struct Item *newItem(uint8_t type, uint8_t id, char name[], char desc[], uint8_t quantity, gfx_sprite_t *icon);
+int8_t getNodeIndex(struct LinkedList *list, struct Node *item);
+int8_t getItemIndex(struct LinkedList *list, uint8_t id);
+void removeItem(struct LinkedList *list, struct Node *item);
+void addItem(struct LinkedList *list, struct Item *item);
+void removeAllItems(struct LinkedList *list);
+void incItemQuantity(struct LinkedList *list, uint8_t index, uint8_t quantity);
+void decItemQuantity(struct LinkedList *list, uint8_t id);
 
 #endif

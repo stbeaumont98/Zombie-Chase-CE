@@ -29,16 +29,38 @@ void draw_inventory(bool from_game, struct Player *p) {
 		gfx_FillRectangle_NoClip(0, 30, 320, 3);
 
 		// Draw the inventory.
-		for (i = 0; i < 10; i++) {
+		for (i = 0; i < 12; i++) {
 			gfx_SetColor(COLOR_WHITE);
-			gfx_Rectangle_NoClip(41 + (i % 5) * 50, 45 + (i / 5) * 50, 38, 38);
-			gfx_Rectangle_NoClip(42 + (i % 5) * 50, 46 + (i / 5) * 50, 36, 36);
-			if (p->inv[i] != NULL)
-				gfx_ScaledTransparentSprite_NoClip(p->inv[i]->icon, 45 + (i % 5) * 50, 49 + (i / 5) * 50, 2, 2);
+			gfx_Rectangle_NoClip(166 + (i % 3) * 50, 42 + (i / 3) * 50, 38, 38);
+			gfx_Rectangle_NoClip(167 + (i % 3) * 50, 43 + (i / 3) * 50, 36, 36);
 		}
 
-		// Draw inventory cursor
-		gfx_Rectangle_NoClip(38 + (cursor_pos % 5) * 50, 42 + (cursor_pos / 5) * 50, 44, 44);
+		// Draw the inventory items.
+		i = 0;
+		struct Node *tmp = p->inv->head;
+		while (tmp != NULL && i < inv_size) {
+			gfx_ScaledTransparentSprite_NoClip(tmp->data->icon, 170 + (i % 3) * 50, 46 + (i / 3) * 50, 2, 2);
+			tmp = tmp->next;
+			i++;
+		}
+
+
+		// Draw inventory cursor.
+		gfx_Rectangle_NoClip(163 + (cursor_pos % 3) * 50, 39 + (cursor_pos / 3) * 50, 44, 44);
+
+		// Draw the player's equipped items
+		gfx_Rectangle_NoClip(22, 60, 55, 55);
+		gfx_Rectangle_NoClip(23, 61, 53, 53);
+		gfx_Rectangle_NoClip(86, 60, 55, 55);
+		gfx_Rectangle_NoClip(87, 61, 53, 53);
+		gfx_Rectangle_NoClip(22, 124, 55, 55);
+		gfx_Rectangle_NoClip(23, 125, 53, 53);
+
+		gfx_ScaledTransparentSprite_NoClip(p->equipped_armor != NULL ? b_frame : p->equipped_armor->data->icon, 27, 65, 3, 3);
+		gfx_ScaledTransparentSprite_NoClip(p->equipped_boots != NULL ? f_frame : p->equipped_boots->data->icon, 27, 129, 3, 3);
+		gfx_ScaledTransparentSprite_NoClip(h1_frame, 91, 65, 3, 3);
+		if (p->equipped_weapon != NULL)
+			gfx_ScaledTransparentSprite_NoClip(p->equipped_weapon->data->icon, 91, 65, 3, 3);
 
 		// Check for key presses.
 		if (can_press) {
@@ -54,16 +76,16 @@ void draw_inventory(bool from_game, struct Player *p) {
 			}
 
 			// The arrows control the player's selection.
-			if (kb_Data[7] & kb_Down && cursor_pos < 5) {
-				cursor_pos += 5;
+			if (kb_Data[7] & kb_Down && cursor_pos < 9) {
+				cursor_pos += 3;
 				can_press = false;
-			} else if (kb_Data[7] & kb_Up && cursor_pos > 4) {
-				cursor_pos -= 5;
+			} else if (kb_Data[7] & kb_Up && cursor_pos > 2) {
+				cursor_pos -= 3;
 				can_press = false;
 			} else if (kb_Data[7] & kb_Left && cursor_pos > 0) {
 				cursor_pos--;
 				can_press = false;
-			} else if (kb_Data[7] & kb_Right && cursor_pos < 9) {
+			} else if (kb_Data[7] & kb_Right && cursor_pos < 11) {
 				cursor_pos++;
 				can_press = false;
 			}
