@@ -19,6 +19,7 @@
 
 #include "types.h"
 #include "draw.h"
+#include "menu.h"
 #include "store.h"
 #include "inventory.h"
 
@@ -105,6 +106,8 @@ int main() {
 	time = rtc_Time();
 
 	can_press = false;
+
+	draw_menu();
 	
     do { // Game loop
 
