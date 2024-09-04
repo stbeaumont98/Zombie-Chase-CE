@@ -31,24 +31,24 @@ void draw_store(bool from_game, struct Player *p) {
 		gfx_FillRectangle_NoClip(0, 30, 320, 3);
 
 		for (i = 0; i < 6; i++)
-			draw_custom_text(store_inv[i + i_offset].name, COLOR_WHITE, 15, 40 + i * 24, (i == selected_item ? 3 : 2));
+			draw_custom_text(store_inv[i + i_offset].name, COLOR_WHITE, 25, 40 + i * 24 - (i == selected_item ? 3 : 0), (i == selected_item ? 3 : 2));
 		
 		// Draw the box with the icon inside.
 		gfx_SetColor(COLOR_WHITE);
-		gfx_Rectangle_NoClip(205, 53, 59, 59);
-		gfx_Rectangle_NoClip(206, 54, 57, 57);
-		gfx_ScaledTransparentSprite_NoClip(store_inv[selected_item + i_offset].icon, 212, 60, 3, 3);
+		gfx_Rectangle_NoClip(226, 53, 59, 59);
+		gfx_Rectangle_NoClip(227, 54, 57, 57);
+		gfx_ScaledTransparentSprite_NoClip(store_inv[selected_item + i_offset].icon, 233, 60, 3, 3);
 
 		// Draw the quantity 
-		draw_custom_text("QTY: <   >", COLOR_WHITE, 198, 118, 2);
-		draw_custom_int(quantity, 2, COLOR_WHITE, 248, 118, 2);
+		draw_custom_text("QTY: <   >", COLOR_WHITE, 219, 118, 2);
+		draw_custom_int(quantity, 2, COLOR_WHITE, 269, 118, 2);
 				
 		// Calculate the selling price and display it underneath the quantity.
 		selling_price = store_inv[selected_item + i_offset].price * quantity;
-		draw_custom_text("$", p->money < selling_price ? COLOR_DARK_RED : COLOR_GREEN, 217, 137, 3);
-		draw_custom_int(selling_price, 1, p->money < selling_price ? COLOR_DARK_RED : COLOR_GREEN, 229, 136, 3);
+		draw_custom_text("$", p->money < selling_price ? COLOR_DARK_RED : COLOR_GREEN, 238, 137, 3);
+		draw_custom_int(selling_price, 1, p->money < selling_price ? COLOR_DARK_RED : COLOR_GREEN, 250, 136, 3);
 
-		gfx_Rectangle_NoClip(25, 189, 270, 40);
+		gfx_Rectangle_NoClip(20, 184, 280, 50);
 		draw_custom_text(store_inv[selected_item + i_offset].description, COLOR_WHITE, 28, 190, 2);
 
 		// Check for key presses.

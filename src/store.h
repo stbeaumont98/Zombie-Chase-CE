@@ -17,10 +17,10 @@ static struct Item store_inv[16] = {		// Items that can be bought in the store.
 	{TYPE_ARMOR, ID_CARDBOARD_ARMOR, "Cardboard Armor", "Cardboard armor protects the|player from a few bites but falls|apart quickly.", 10, 30, cb_armor},
 	{TYPE_ARMOR, ID_PLASTIC_ARMOR, "Plastic Armor", "Plastic armor can take a bit more|damage than cardboard armor.", 50, 10, p_armor},
 	{TYPE_ARMOR, ID_STEEL_ARMOR, "Steel Armor", "Steel armor protects the player|from more bites but slows the|player down.", 100, 5, s_armor},
-	{TYPE_ARMOR, ID_FORCEFIELD_ARMOR, "Forcefield Armor", "Forcefield armor protects the|player from all bites for 15|seconds.", 100, 2, ff_armor},
+	{TYPE_ARMOR, ID_FORCEFIELD_ARMOR, "Energy Armor", "Energy armor protects the|player from all bites for 15|seconds.", 100, 2, ff_armor},
 	{TYPE_ARMOR, ID_CAMOUFLAGE_ARMOR, "Camo Armor", "Camouflage armor makes the player|invisible to zombies for a period|of time.", 100, 5, camo_armor},
-	{TYPE_BOOTS, ID_LIGHTWEIGHT_BOOTS, "Lightweight Boots", "Lightweight boots make the player|move faster but can be damaged by|a few bites.", 20, 0, lw_boots},
-	{TYPE_BOOTS, ID_HEAVYWEIGHT_BOOTS, "Heavyweight Boots", "Heavyweight boots make the player|move faster and can be damaged by|more bites.", 50, 0, hw_boots},
+	{TYPE_BOOTS, ID_LIGHTWEIGHT_BOOTS, "Light Boots", "Light boots make the player|move faster but can be damaged by|a few bites.", 20, 0, lw_boots},
+	{TYPE_BOOTS, ID_HEAVYWEIGHT_BOOTS, "Heavy Boots", "Heavy boots make the player|move faster and can be damaged by|more bites.", 50, 0, hw_boots},
 };
 
 void draw_store(bool from_game, struct Player *p);
