@@ -19,8 +19,7 @@ void draw_store(bool from_game, struct Player *p) {
 	int8_t i_offset = 0, selected_item = 0;
 	uint16_t selling_price;
 	bool can_press = false;
-	bool in_loop = true;
-	while (in_loop) {
+	do {
 		kb_Scan();
 		// Black background.
 		gfx_FillScreen(COLOR_BLACK);
@@ -54,37 +53,33 @@ void draw_store(bool from_game, struct Player *p) {
 		// Check for key presses.
 		if (can_press) {
 
-			// Buttons to break the loop.
-			if (kb_Data[1] & kb_Del || kb_Data[6] & kb_Clear)
-				in_loop = false;
-
 			// Action controls
 			if (kb_Data[1] & kb_2nd || kb_Data[6] & kb_Enter) {
-				if (p->money >= selling_price && p->inv->size < 12) {
+				if (p->money >= selling_price && getItemIndex(p->inv, ID_NONE) != -1) {
 					p->money -= selling_price;
 					// Check if the user already has at least one of that item
 					int item_index = getItemIndex(p->inv, store_inv[selected_item + i_offset].id);
 					dbg_printf("Item index found!\nIndex: %d\n", item_index);
 					if (item_index != -1) {
 						// If so, add to the quantity owned by the player
-						incItemQuantity(p->inv, item_index, quantity);
+						p->inv[item_index].quantity++;
 					} else {
-						// Otherwise, allocate memory and put the new item there.
 
-						addItem(p->inv, newItem(
-							store_inv[selected_item + i_offset].type,
-							store_inv[selected_item + i_offset].id,
-							store_inv[selected_item + i_offset].name,
-							store_inv[selected_item + i_offset].description,
-							quantity,
-							store_inv[selected_item + i_offset].icon
-							));
+						// Find the next empty slot
+						int new_index = getItemIndex(p->inv, ID_NONE);
+
+						p->inv[new_index] = newItem(
+								store_inv[selected_item + i_offset].type,
+								store_inv[selected_item + i_offset].id,
+								store_inv[selected_item + i_offset].name,
+								store_inv[selected_item + i_offset].description,
+								quantity,
+								store_inv[selected_item + i_offset].icon
+							);
 						
 						dbg_printf("Item added!\n");
 
-						p->equipped_weapon = p->inv->head;
-
-						p->inv->size++;
+						p->equipped_weapon = &p->inv[new_index];
 					}
 				}
 				can_press = false;
@@ -112,7 +107,7 @@ void draw_store(bool from_game, struct Player *p) {
 			// Open inventory from the store.
 			if (kb_Data[1] & kb_Mode) {
 				if (!from_game)
-					in_loop = false;
+					break;
 				else {
 					draw_inventory(false, p);
 					can_press = false;
@@ -135,5 +130,5 @@ void draw_store(bool from_game, struct Player *p) {
 		if (!kb_AnyKey()) can_press = true;
 						
 		gfx_SwapDraw();
-	}
+	} while (!(can_press && (kb_Data[1] & kb_Del || kb_Data[6] & kb_Clear)));
 }

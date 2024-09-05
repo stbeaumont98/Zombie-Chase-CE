@@ -19,6 +19,7 @@
 #define COLOR_HORSE 0x0C
 
 /* Item types */
+#define TYPE_NONE -1
 #define TYPE_LURE 0
 #define TYPE_EXPLOSIVE 1
 #define TYPE_MELEE 3
@@ -26,6 +27,7 @@
 #define TYPE_BOOTS 5
 
 /* Item IDs */
+#define ID_NONE -1
 #define ID_MACHETE 0			// A machete can be swung all around and kill some zombies within its reach.
 #define ID_KATANA 1				// A katana can also be swung around, but its range is bigger.
 #define ID_GRENADE 2			// Grenades explode after an amount of time passes and then kills the zombies lured to it and that's about it.
@@ -50,8 +52,8 @@ struct Drop {
 };
 
 struct Item {
-	uint8_t type;
-	uint8_t id;
+	int8_t type;
+	int8_t id;
 	char name[20];
 	char description[0xFF];
 	uint16_t price;
@@ -75,10 +77,10 @@ struct Player {
 	bool infected;
 	uint16_t money;
 	uint16_t points;
-	struct LinkedList *inv;
-	struct Node *equipped_weapon;
-	struct Node *equipped_armor;
-	struct Node *equipped_boots;
+	struct Item inv[12];
+	struct Item *equipped_weapon;
+	struct Item *equipped_armor;
+	struct Item *equipped_boots;
 };
 
 struct Zombie {
@@ -88,24 +90,7 @@ struct Zombie {
 	bool alive;
 };
 
-struct Node {
-	struct Item *data;
-	struct Node *next;
-};
-
-struct LinkedList {
-	struct Node *head;
-	struct Node *tail;
-    uint8_t size;
-};
-
-struct Item *newItem(uint8_t type, uint8_t id, char name[], char desc[], uint8_t quantity, gfx_sprite_t *icon);
-int8_t getNodeIndex(struct LinkedList *list, struct Node *item);
-int8_t getItemIndex(struct LinkedList *list, uint8_t id);
-void removeItem(struct LinkedList *list, struct Node *item);
-void addItem(struct LinkedList *list, struct Item *item);
-void removeAllItems(struct LinkedList *list);
-void incItemQuantity(struct LinkedList *list, uint8_t index, uint8_t quantity);
-void decItemQuantity(struct LinkedList *list, uint8_t id);
+struct Item newItem(int8_t type, int8_t id, char name[], char desc[], uint8_t quantity, gfx_sprite_t *icon);
+int8_t getItemIndex(struct Item list[], int8_t id);
 
 #endif
