@@ -79,7 +79,22 @@ void draw_store(bool from_game, struct Player *p) {
 						
 						dbg_printf("Item added!\n");
 
-						p->equipped_weapon = &p->inv[new_index];
+						switch (p->inv[new_index].type) {
+							case TYPE_NONE:
+								break;
+							case TYPE_ARMOR:
+								if (p->equipped_armor == NULL)
+									p->equipped_armor = &p->inv[new_index];
+								break;
+							case TYPE_BOOTS:
+								if (p->equipped_boots == NULL)
+									p->equipped_boots = &p->inv[new_index];
+								break;
+							default:
+								if (p->equipped_weapon == NULL)
+									p->equipped_weapon = &p->inv[new_index];
+								break;
+						}
 					}
 				}
 				can_press = false;
