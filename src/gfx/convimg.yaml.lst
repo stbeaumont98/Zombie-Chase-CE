@@ -2,6 +2,12 @@ zombie_palette.h
 zombie_palette.c
 title.h
 title.c
+menu_player.h
+menu_player.c
+menu_zombie1.h
+menu_zombie1.c
+menu_zombie2.h
+menu_zombie2.c
 fail.h
 fail.c
 z_0.h

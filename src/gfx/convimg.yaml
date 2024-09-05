@@ -20,6 +20,9 @@ converts:
     palette: zombie_palette
     images:
       - title.png
+      - menu_player.png
+      - menu_zombie1.png
+      - menu_zombie2.png
       - fail.png
       - z_0.png
       - z_1.png

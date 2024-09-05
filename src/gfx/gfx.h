@@ -8,6 +8,9 @@ extern "C" {
 #include "zombie_palette.h"
 #define zombie_sprites_palette_offset 0
 #include "title.h"
+#include "menu_player.h"
+#include "menu_zombie1.h"
+#include "menu_zombie2.h"
 #include "fail.h"
 #include "z_0.h"
 #include "z_1.h"
