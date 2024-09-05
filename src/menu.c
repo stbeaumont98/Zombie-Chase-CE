@@ -5,20 +5,20 @@
 #include "gfx/gfx.h"
 #include "types.h"
 #include "draw.h"
+#include "scores.h"
 
 #include "menu.h"
 
-void draw_menu() {
+int8_t main_menu() {
     uint8_t i;
     int8_t selected_item = 0;
 	int old_time, time, one_second;
     bool can_press = false;
-    bool in_loop = true;
     bool text_flash = true;
     
 	time = rtc_Time();
 
-    while (in_loop) {
+    do {
 		kb_Scan();
 		
 		old_time = time;
@@ -42,9 +42,6 @@ void draw_menu() {
 	        draw_custom_text(quit_string, COLOR_WHITE, 79, 213, 2);
 
         if (can_press) {
-			// Buttons to break the loop.
-			if (kb_Data[6] & kb_Clear)
-				in_loop = false;
 
             // Up and down controls the menu option.
 			if (kb_Data[7] & kb_Down) {
@@ -53,6 +50,20 @@ void draw_menu() {
 			} else if (kb_Data[7] & kb_Up) {
 				selected_item--;
 				can_press = false;
+            }
+            
+			if (kb_Data[1] & kb_2nd || kb_Data[6] & kb_Enter) {
+                switch (selected_item) {
+                    case CLASSIC:
+                    case ENHANCED:
+                        return selected_item;
+                    case SCORES:
+                        draw_scores();
+                        break;
+                    default:
+                        break;
+                }
+                can_press = false;
             }
         }
 
@@ -64,5 +75,8 @@ void draw_menu() {
 		if (!kb_AnyKey()) can_press = true;
 						
 		gfx_SwapDraw();
-    }
+
+    } while (!(can_press && kb_Data[6] & kb_Clear));
+
+    return -1;
 }
