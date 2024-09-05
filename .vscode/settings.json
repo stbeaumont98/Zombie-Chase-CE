@@ -1,6 +1,9 @@
 {
     "cmake.configureOnOpen": true,
     "files.associations": {
-        "stdint.h": "c"
+        "stdint.h": "c",
+        "tice.h": "c",
+        "zombie_font.h": "c",
+        "scores.h": "c"
     }
 }
