@@ -12,22 +12,10 @@
 int8_t main_menu() {
     uint8_t i;
     int8_t selected_item = 0;
-	int old_time, time, one_second;
     bool can_press = false;
-    bool text_flash = true;
-    
-	time = rtc_Time();
 
     do {
 		kb_Scan();
-		
-		old_time = time;
-		time = rtc_Time();
-		one_second = time - old_time;
-
-        if (one_second)
-            text_flash = !text_flash;
-
 
 		// Black background.
 		gfx_FillScreen(COLOR_BLACK);
@@ -35,11 +23,14 @@ int8_t main_menu() {
         // Title
         gfx_ScaledTransparentSprite_NoClip(title, 107, 25, 4, 4);
 
-        for (i = 0; i < 3; i++)
-            draw_custom_text(menu_options[i], COLOR_WHITE, 25, 120 + i * 24 - (i == selected_item ? 3 : 0), (i == selected_item ? 3 : 2));
+        gfx_ScaledSprite_NoClip(menu_player, 249, 141, 2, 2);
+        gfx_ScaledSprite_NoClip(menu_zombie1, 180, 139, 2, 2);
+        gfx_ScaledSprite_NoClip(menu_zombie2, 116, 159, 2, 2);
 
-        if (text_flash)
-	        draw_custom_text(quit_string, COLOR_WHITE, 79, 213, 2);
+        for (i = 0; i < 3; i++)
+            draw_custom_text(menu_options[i], COLOR_WHITE, 25, 124 + i * 24 - (i == selected_item ? 3 : 0), (i == selected_item ? 3 : 2));
+
+	    draw_custom_text(quit_string, COLOR_WHITE, 79, 213, 2);
 
         if (can_press) {
 
