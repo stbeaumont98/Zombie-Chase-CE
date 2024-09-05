@@ -12,6 +12,6 @@ static char menu_options[3][15] = {
 };
 static char quit_string[] = "PRESS [CLEAR] TO QUIT";
 
-int8_t main_menu();
+int8_t main_menu(int8_t selected_item);
 
 #endif

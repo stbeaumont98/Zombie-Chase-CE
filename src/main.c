@@ -37,7 +37,7 @@ int main() {
 	int8_t mode = 0;
 	
 	while (mode != -1) {
-		mode = main_menu();
+		mode = main_menu(mode);
 		if (mode != -1)
 			game(mode);
 	}

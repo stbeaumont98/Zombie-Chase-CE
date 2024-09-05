@@ -9,9 +9,8 @@
 
 #include "menu.h"
 
-int8_t main_menu() {
+int8_t main_menu(int8_t selected_item) {
     uint8_t i;
-    int8_t selected_item = 0;
     bool can_press = false;
 
     do {
@@ -25,10 +24,11 @@ int8_t main_menu() {
 
         gfx_ScaledSprite_NoClip(menu_player, 249, 141, 2, 2);
         gfx_ScaledSprite_NoClip(menu_zombie1, 180, 139, 2, 2);
-        gfx_ScaledSprite_NoClip(menu_zombie2, 116, 159, 2, 2);
+        gfx_ScaledSprite_NoClip(menu_zombie2, 115, 159, 2, 2);
 
-        for (i = 0; i < 3; i++)
+        for (i = 0; i < 3; i++) {
             draw_custom_text(menu_options[i], COLOR_WHITE, 25, 124 + i * 24 - (i == selected_item ? 3 : 0), (i == selected_item ? 3 : 2));
+        }
 
 	    draw_custom_text(quit_string, COLOR_WHITE, 79, 213, 2);
 
