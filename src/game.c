@@ -65,7 +65,7 @@ void game(int8_t game_mode) {
 
 	/* Initialize the health pack coordinates */
 	hp.x = rand() % 310 + 2;
-    hp.y = rand() % 230 + 2;
+    hp.y = rand() % 219 + 13;
 	hp.value = rand() % 4;
 
 	/* Initialize the array of zombies. */
@@ -506,7 +506,7 @@ void game(int8_t game_mode) {
 				hp.value = rand() % 4;
 			}
 			hp.x = rand() % 310 + 2;
-			hp.y = rand() % 230 + 2;
+			hp.y = rand() % 219 + 13;
         }
 
 		/* Health cannot exceed 200 */
@@ -555,7 +555,7 @@ void game(int8_t game_mode) {
 
 				/* Initialize health pack and health. */
 				hp.x = rand() % 310 + 2;
-				hp.y = rand() % 230 + 2;
+				hp.y = rand() % 219 + 13;
 				hp.value = rand() % 4;
 				p.infected = false;
 				can_press = false;
