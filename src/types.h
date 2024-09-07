@@ -62,8 +62,8 @@ struct Item {
 };
 
 struct Target {
-	uint8_t type;
-	uint8_t id;
+	int8_t type;
+	int8_t id;
 	uint16_t x;
 	uint8_t y;
 	uint8_t timer;
@@ -90,7 +90,11 @@ struct Zombie {
 	bool alive;
 };
 
-struct Item newItem(int8_t type, int8_t id, char name[], char desc[], uint8_t quantity, gfx_sprite_t *icon);
-int8_t getItemIndex(struct Item list[], int8_t id);
+struct Item new_item(int8_t type, int8_t id, char name[], char desc[], uint8_t quantity, gfx_sprite_t *icon);
+int8_t get_item_index(struct Item list[], int8_t id);
+
+struct Target new_object(int8_t type, int8_t id, uint16_t x, uint8_t y, uint8_t timer, uint8_t radius);
+int8_t get_object_index(struct Target list[], int8_t id);
+struct Target drop_object(uint8_t id, uint16_t x, uint8_t y);
 
 #endif

@@ -55,10 +55,10 @@ void draw_store(bool from_game, struct Player *p) {
 
 			// Action controls
 			if (kb_Data[1] & kb_2nd || kb_Data[6] & kb_Enter) {
-				if (p->money >= selling_price && getItemIndex(p->inv, ID_NONE) != -1) {
+				if (p->money >= selling_price && get_item_index(p->inv, ID_NONE) != -1) {
 					p->money -= selling_price;
 					// Check if the user already has at least one of that item
-					int item_index = getItemIndex(p->inv, store_inv[selected_item + i_offset].id);
+					int item_index = get_item_index(p->inv, store_inv[selected_item + i_offset].id);
 					dbg_printf("Item index found!\nIndex: %d\n", item_index);
 					if (item_index != -1) {
 						// If so, add to the quantity owned by the player
@@ -66,9 +66,9 @@ void draw_store(bool from_game, struct Player *p) {
 					} else {
 
 						// Find the next empty slot
-						int new_index = getItemIndex(p->inv, ID_NONE);
+						int new_index = get_item_index(p->inv, ID_NONE);
 
-						p->inv[new_index] = newItem(
+						p->inv[new_index] = new_item(
 								store_inv[selected_item + i_offset].type,
 								store_inv[selected_item + i_offset].id,
 								store_inv[selected_item + i_offset].name,

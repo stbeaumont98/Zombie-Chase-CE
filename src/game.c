@@ -51,7 +51,7 @@ void game(int8_t game_mode) {
 	p.points = 0;
     
     for (i = 0; i < 12; i++)
-	    p.inv[i] = newItem(TYPE_NONE, ID_NONE, "", "", 0, unknown);
+	    p.inv[i] = new_item(TYPE_NONE, ID_NONE, "", "", 0, unknown);
 
 	p.equipped_weapon = NULL;
     p.equipped_armor = NULL;
@@ -59,9 +59,7 @@ void game(int8_t game_mode) {
 
 	/* Initialize the objects array. */
 	for (i = 0; i < 16; i++)
-		objects[i] = NULL;
-	
-	obj_count = 0;
+		objects[i] = new_object(TYPE_NONE, ID_NONE, 0, 0, 0, 0);
 
 	/* Initialize the health pack coordinates */
 	hp.x = rand() % 310 + 2;
@@ -161,76 +159,74 @@ void game(int8_t game_mode) {
 			*/
 
 			/* Game logic for any objects on the screen. */
-			for (i = 0; i < obj_count; i++) {
-				if (objects[i] != NULL) {
-					if (objects[i]->timer > 0) {
+			for (i = 0; i < 16; i++) {
+				if (objects[i].type != TYPE_NONE) {
+					if (objects[i].timer > 0) {
 						/* Draw objects differently based on their ID */
-						switch (objects[i]->id) {
+						switch (objects[i].id) {
 							case ID_GRENADE:
 								gfx_SetColor(COLOR_DARK_GREEN);
-								gfx_FillRectangle_NoClip(objects[i]->x, objects[i]->y, 3, 3);
-								draw_custom_int(objects[i]->timer, 1, COLOR_WHITE, objects[i]->x + 4, objects[i]->y - 7, 1);
-								if (one_second && objects[i]->timer > 0)
-									objects[i]->timer--;
+								gfx_FillRectangle_NoClip(objects[i].x, objects[i].y, 3, 3);
+								draw_custom_int(objects[i].timer, 1, COLOR_WHITE, objects[i].x + 4, objects[i].y - 7, 1);
+								if (one_second && objects[i].timer > 0)
+									objects[i].timer--;
 								break;
 							case ID_C4:
 								gfx_SetColor(COLOR_BEIGE);
-								gfx_FillRectangle_NoClip(objects[i]->x, objects[i]->y, 5, 3);
+								gfx_FillRectangle_NoClip(objects[i].x, objects[i].y, 5, 3);
 								strcpy(status_string, "Press [alpha] to detonate C4.");
 								status_countdown = 1;
 								if (can_press && kb_Data[2] & kb_Alpha)
-									objects[i]->timer--;
+									objects[i].timer--;
 								break;
 							case ID_LAND_MINE:
 								gfx_SetColor(COLOR_GRAY);
-								gfx_FillCircle_NoClip(objects[i]->x, objects[i]->y, 2);
+								gfx_FillCircle_NoClip(objects[i].x, objects[i].y, 2);
 								for (j = 0; j < zombie_count; j++) {
-									if ((objects[i]->x < z[j].x + 6) && (objects[i]->x + 6 > z[j].x) && (objects[i]->y < z[j].y + 6) && (6 + objects[i]->y > z[j].y))
-										objects[i]->timer--;
+									if ((objects[i].x < z[j].x + 6) && (objects[i].x + 6 > z[j].x) && (objects[i].y < z[j].y + 6) && (6 + objects[i].y > z[j].y))
+										objects[i].timer--;
 								}
 								break;
 							case ID_TBONE_STEAK:
 								gfx_SetColor(COLOR_STEAK);
-								gfx_FillRectangle_NoClip(objects[i]->x, objects[i]->y, 3, 3);
-								draw_custom_int(objects[i]->timer, 1, COLOR_WHITE, objects[i]->x + 4, objects[i]->y - 7, 1);
-								if (one_second && objects[i]->timer > 0)
-									objects[i]->timer--;
+								gfx_FillRectangle_NoClip(objects[i].x, objects[i].y, 3, 3);
+								draw_custom_int(objects[i].timer, 1, COLOR_WHITE, objects[i].x + 4, objects[i].y - 7, 1);
+								if (one_second && objects[i].timer > 0)
+									objects[i].timer--;
 								break;
 							case ID_WHOLE_TURKEY:
 								gfx_SetColor(COLOR_TURKEY);
-								gfx_FillRectangle_NoClip(objects[i]->x, objects[i]->y, 4, 4);
-								draw_custom_int(objects[i]->timer, 1, COLOR_WHITE, objects[i]->x + 4, objects[i]->y - 7, 1);
-								if (one_second && objects[i]->timer > 0)
-									objects[i]->timer--;
+								gfx_FillRectangle_NoClip(objects[i].x, objects[i].y, 4, 4);
+								draw_custom_int(objects[i].timer, 1, COLOR_WHITE, objects[i].x + 4, objects[i].y - 7, 1);
+								if (one_second && objects[i].timer > 0)
+									objects[i].timer--;
 								break;
 							case ID_DEAD_HORSE:
 								gfx_SetColor(COLOR_HORSE);
-								gfx_FillRectangle_NoClip(objects[i]->x, objects[i]->y, 5, 3);
-								draw_custom_int(objects[i]->timer, 1, COLOR_WHITE, objects[i]->x + 4, objects[i]->y - 7, 1);
-								if (one_second && objects[i]->timer > 0)
-									objects[i]->timer--;
+								gfx_FillRectangle_NoClip(objects[i].x, objects[i].y, 5, 3);
+								draw_custom_int(objects[i].timer, 1, COLOR_WHITE, objects[i].x + 4, objects[i].y - 7, 1);
+								if (one_second && objects[i].timer > 0)
+									objects[i].timer--;
 								break;
 						}
 					} else {
-						if (objects[i]->type == TYPE_EXPLOSIVE) {
+						if (objects[i].type == TYPE_EXPLOSIVE) {
 
 							for (j = 0; j < zombie_count; j++)
-								if (z[j].target == objects[i])
+								if (z[j].target == &objects[i])
 									z[j].target = NULL;
 
 							/* Explosion "animation." */
 							gfx_SetColor(COLOR_WHITE);
-							gfx_FillCircle(objects[i]->x, objects[i]->y, objects[i]->radius);
+							gfx_FillCircle(objects[i].x, objects[i].y, objects[i].radius);
 							gfx_SwapDraw();
-
-							dbg_printf("Test 1\n");
 
 							int distance;
 
 							/* Check if zombies are in the blast radius. */
 							for (j = 0; j < zombie_count; j++) {
-								distance = sqrt(pow(objects[i]->x - z[j].x + 2, 2) + pow(objects[i]->y - z[j].y + 2, 2));
-								if (distance <= objects[i]->radius) {
+								distance = sqrt(pow(objects[i].x - z[j].x + 2, 2) + pow(objects[i].y - z[j].y + 2, 2));
+								if (distance <= objects[i].radius) {
 									z[j].target = NULL;
 									if (zombie_count > 1) {
 										z[j] = z[--zombie_count];
@@ -240,29 +236,15 @@ void game(int8_t game_mode) {
 								}
 							}
 
-							dbg_printf("Test 2\n");
-
 							/* Check if the player is in the blast radius. */
-							distance = sqrt(pow(objects[i]->x - p.x + 2, 2) + pow(objects[i]->y - p.y + 2, 2));
-							if (distance <= objects[i]->radius)
+							distance = sqrt(pow(objects[i].x - p.x + 2, 2) + pow(objects[i].y - p.y + 2, 2));
+							if (distance <= objects[i].radius)
 								p.health -= (p.health / 2);
-
-
-							dbg_printf("Test 3\n");
 							
 						}
 
 						/* Take care of the dead object. */
-						free(objects[i]); // Why does the game crash when freeing this object??
-							dbg_printf("Test 4\n");
-						if (obj_count <= 1)
-							objects[i] = NULL;
-						else {
-							objects[i] = objects[--obj_count];
-							objects[obj_count] = NULL;
-						}
-
-							dbg_printf("Test 5\n");
+						objects[i] = new_object(TYPE_NONE, ID_NONE, 0, 0, 0, 0);
 					}
 				}
 			}
@@ -445,22 +427,18 @@ void game(int8_t game_mode) {
 					} else {
 
 						/* Only drop something if there's a free spot in the objects array. */
-						if (objects[obj_count] == NULL) {
+						int8_t obj_index = get_object_index(objects, ID_NONE);
+						if (obj_index != -1) {
 
 							/* Add a new object to the objects array. */
-							new_object(p.equipped_weapon->id);
+							objects[obj_index] = drop_object(p.equipped_weapon->id, p.x, p.y);
 
 							/* Set this new object as the target for a random amount of zombies. */
 							for (i = rand() % zombie_count; i < zombie_count; i++) {
 								if (z[i].target == NULL) {
-									z[i].target = objects[obj_count];
+									z[i].target = &objects[obj_index];
 								}
 							}
-							
-							obj_count++;
-
-							if (obj_count > 15)
-								obj_count = 15;
 
 							/* Decrease the quantity of the players equipped weapon and check if they've run out. */
 							if (--p.equipped_weapon->quantity == 0) {
@@ -469,7 +447,7 @@ void game(int8_t game_mode) {
 								 */
 
 								/* Find the item in inventory and remove it from player inventory. */
-								*p.equipped_weapon = newItem(TYPE_NONE, ID_NONE, "", "", 0, unknown);
+								*p.equipped_weapon = new_item(TYPE_NONE, ID_NONE, "", "", 0, unknown);
 
 								/* No weapon is equipped anymore. */
 								p.equipped_weapon = NULL;
@@ -527,10 +505,8 @@ void game(int8_t game_mode) {
 				}
 
 				/* Initialize objects array. */
-				for (i = 0; i < obj_count; i++) {
-					free(objects[i]);
-					objects[i] = NULL;
-				}
+				for (i = 0; i < 16; i++)
+					objects[i] = new_object(TYPE_NONE, ID_NONE, 0, 0, 0, 0);
 
 				/* Initialize the first zombie. */
 				z[0].x = rand() % 310 + 2;
@@ -547,7 +523,7 @@ void game(int8_t game_mode) {
 				p.money = p.points = 0;
                 
                 for (i = 0; i < 12; i++)
-                    p.inv[i] = newItem(TYPE_NONE, ID_NONE, "", "", 0, unknown);
+                    p.inv[i] = new_item(TYPE_NONE, ID_NONE, "", "", 0, unknown);
 
 				p.equipped_weapon = NULL;
 				p.equipped_armor = NULL;
@@ -573,44 +549,4 @@ void game(int8_t game_mode) {
         gfx_SwapDraw();
 
     } while (!(can_press && kb_Data[6] & kb_Clear));
-
-	for (i = 0; i < obj_count; i++)
-		free(objects[i]);
-
-    for (i = 0; i < 12; i++)
-	    p.inv[i] = newItem(TYPE_NONE, ID_NONE, "", "", 0, unknown);
-}
-
-void new_object(uint8_t id) {
-	objects[obj_count] = (struct Target *) malloc(sizeof(struct Target));
-	objects[obj_count]->type = (id == ID_GRENADE || id == ID_C4 || id == ID_LAND_MINE);
-	objects[obj_count]->id = id;
-	objects[obj_count]->x = p.x;
-	objects[obj_count]->y = p.y;
-	switch (id) {
-		case ID_GRENADE:
-			objects[obj_count]->timer = 5;
-			objects[obj_count]->radius = 15;
-			break;
-		case ID_C4:
-			objects[obj_count]->timer = 1;
-			objects[obj_count]->radius = 30;
-			break;
-		case ID_LAND_MINE:
-			objects[obj_count]->timer = 1;
-			objects[obj_count]->radius = 60;
-			break;
-		case ID_TBONE_STEAK:
-			objects[obj_count]->timer = 5;
-			objects[obj_count]->radius = 15;
-			break;
-		case ID_WHOLE_TURKEY:
-			objects[obj_count]->timer = 10;
-			objects[obj_count]->radius = 20;
-			break;
-		case ID_DEAD_HORSE:
-			objects[obj_count]->timer = 20;
-			objects[obj_count]->radius = 25;
-			break;
-	}
 }
