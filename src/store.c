@@ -62,7 +62,7 @@ void draw_store(bool from_game, struct Player *p) {
 					dbg_printf("Item index found!\nIndex: %d\n", item_index);
 					if (item_index != -1) {
 						// If so, add to the quantity owned by the player
-						p->inv[item_index].quantity++;
+						p->inv[item_index].quantity += quantity;
 					} else {
 
 						// Find the next empty slot

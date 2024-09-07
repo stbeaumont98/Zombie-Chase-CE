@@ -77,7 +77,7 @@ struct Player {
 	bool infected;
 	uint16_t money;
 	uint16_t points;
-	struct Item inv[12];
+	struct Item inv[9];
 	struct Item *equipped_weapon;
 	struct Item *equipped_armor;
 	struct Item *equipped_boots;

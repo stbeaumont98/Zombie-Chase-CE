@@ -27,30 +27,34 @@ void draw_inventory(bool from_game, struct Player *p) {
 		gfx_FillRectangle_NoClip(0, 30, 320, 3);
 
 		// Draw the inventory.
-		for (i = 0; i < 12; i++) {
+		for (i = 0; i < 9; i++) {
 			gfx_SetColor(COLOR_WHITE);
-			gfx_Rectangle_NoClip(166 + (i % 3) * 50, 42 + (i / 3) * 50, 38, 38);
-			gfx_Rectangle_NoClip(167 + (i % 3) * 50, 43 + (i / 3) * 50, 36, 36);
-			if (p->inv[i].id != ID_NONE)
-				gfx_ScaledTransparentSprite_NoClip(p->inv[i].icon, 170 + (i % 3) * 50, 46 + (i / 3) * 50, 2, 2);
+			gfx_Rectangle_NoClip(151 + (i % 3) * 54, 59 + (i / 3) * 54, 46, 46);
+			gfx_Rectangle_NoClip(152 + (i % 3) * 54, 60 + (i / 3) * 54, 44, 44);
+			if (p->inv[i].id != ID_NONE) {
+				gfx_ScaledTransparentSprite_NoClip(p->inv[i].icon, 155 + (i % 3) * 54 + (p->inv[i].quantity > 1 ? 0 : 4), 63 + (i / 3) * 54 + (p->inv[i].quantity > 1 ? 0 : 4), 2, 2);
+				if (p->inv[i].quantity > 1) {
+					draw_custom_text("x", COLOR_WHITE, (i % 3) * 54 + (p->inv[i].quantity >= 10 ? 171 : 179), 89 + (i / 3) * 54, 2);
+					draw_custom_int(p->inv[i].quantity, 1, COLOR_WHITE, (i % 3) * 54 + (p->inv[i].quantity > 10 ? 179 : 187), 89 + (i / 3) * 54, 2);
+				}
+			}
+
 		}
 
 		// Draw inventory cursor.
-		gfx_Rectangle_NoClip(163 + (cursor_pos % 3) * 50, 39 + (cursor_pos / 3) * 50, 44, 44);
+		gfx_Rectangle_NoClip(148 + (cursor_pos % 3) * 54, 56 + (cursor_pos / 3) * 54, 52, 52);
 
 		// Draw the player's equipped items
-		gfx_Rectangle_NoClip(22, 60, 55, 55);
-		gfx_Rectangle_NoClip(23, 61, 53, 53);
-		gfx_Rectangle_NoClip(86, 60, 55, 55);
-		gfx_Rectangle_NoClip(87, 61, 53, 53);
-		gfx_Rectangle_NoClip(22, 124, 55, 55);
-		gfx_Rectangle_NoClip(23, 125, 53, 53);
+		gfx_Rectangle_NoClip(16, 77, 55, 55);
+		gfx_Rectangle_NoClip(17, 78, 53, 53);
+		gfx_Rectangle_NoClip(80, 77, 55, 55);
+		gfx_Rectangle_NoClip(81, 78, 53, 53);
+		gfx_Rectangle_NoClip(16, 141, 55, 55);
+		gfx_Rectangle_NoClip(17, 142, 53, 53);
 
-		gfx_ScaledTransparentSprite_NoClip(p->equipped_armor != NULL ? p->equipped_armor->icon : b_frame, 27, 65, 3, 3);
-		gfx_ScaledTransparentSprite_NoClip(p->equipped_boots != NULL ? p->equipped_boots->icon : f_frame, 27, 129, 3, 3);
-		gfx_ScaledTransparentSprite_NoClip(h1_frame, 91, 65, 3, 3);
-		if (p->equipped_weapon != NULL)
-			gfx_ScaledTransparentSprite_NoClip(p->equipped_weapon->icon, 91, 65, 3, 3);
+		gfx_ScaledTransparentSprite_NoClip(p->equipped_armor != NULL ? p->equipped_armor->icon : b_frame, 21, 82, 3, 3);
+		gfx_ScaledTransparentSprite_NoClip(p->equipped_boots != NULL ? p->equipped_boots->icon : f_frame, 21, 146, 3, 3);
+		gfx_ScaledTransparentSprite_NoClip(p->equipped_weapon != NULL ? p->equipped_weapon->icon : h1_frame, 85, 82, 3, 3);
 
 		// Check for key presses.
 		if (can_press) {
@@ -75,7 +79,7 @@ void draw_inventory(bool from_game, struct Player *p) {
 			}
 
 			// The arrows control the player's selection.
-			if (kb_Data[7] & kb_Down && cursor_pos < 9) {
+			if (kb_Data[7] & kb_Down && cursor_pos < 6) {
 				cursor_pos += 3;
 				can_press = false;
 			} else if (kb_Data[7] & kb_Up && cursor_pos > 2) {
@@ -84,7 +88,7 @@ void draw_inventory(bool from_game, struct Player *p) {
 			} else if (kb_Data[7] & kb_Left && cursor_pos > 0) {
 				cursor_pos--;
 				can_press = false;
-			} else if (kb_Data[7] & kb_Right && cursor_pos < 11) {
+			} else if (kb_Data[7] & kb_Right && cursor_pos < 8) {
 				cursor_pos++;
 				can_press = false;
 			}

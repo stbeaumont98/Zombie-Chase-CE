@@ -50,7 +50,7 @@ void game(int8_t game_mode) {
 	p.money = 500;
 	p.points = 0;
     
-    for (i = 0; i < 12; i++)
+    for (i = 0; i < 9; i++)
 	    p.inv[i] = new_item(TYPE_NONE, ID_NONE, "", "", 0, unknown);
 
 	p.equipped_weapon = NULL;
@@ -522,7 +522,7 @@ void game(int8_t game_mode) {
 				p.health = 200;
 				p.money = p.points = 0;
                 
-                for (i = 0; i < 12; i++)
+                for (i = 0; i < 9; i++)
                     p.inv[i] = new_item(TYPE_NONE, ID_NONE, "", "", 0, unknown);
 
 				p.equipped_weapon = NULL;
