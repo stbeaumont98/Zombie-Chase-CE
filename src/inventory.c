@@ -26,35 +26,44 @@ void draw_inventory(bool from_game, struct Player *p) {
 		gfx_SetColor(COLOR_WHITE);
 		gfx_FillRectangle_NoClip(0, 30, 320, 3);
 
+		// Draw inventory cursor.
+		gfx_Rectangle_NoClip(163 + (cursor_pos % 3) * 50, 64 + (cursor_pos / 3) * 50, 44, 44);
+
 		// Draw the inventory.
 		for (i = 0; i < 9; i++) {
 			gfx_SetColor(COLOR_WHITE);
-			gfx_Rectangle_NoClip(151 + (i % 3) * 54, 59 + (i / 3) * 54, 46, 46);
-			gfx_Rectangle_NoClip(152 + (i % 3) * 54, 60 + (i / 3) * 54, 44, 44);
+			gfx_Rectangle_NoClip(166 + (i % 3) * 50, 67 + (i / 3) * 50, 38, 38);
+			gfx_Rectangle_NoClip(167 + (i % 3) * 50, 68 + (i / 3) * 50, 36, 36);
 			if (p->inv[i].id != ID_NONE) {
-				gfx_ScaledTransparentSprite_NoClip(p->inv[i].icon, 155 + (i % 3) * 54 + (p->inv[i].quantity > 1 ? 0 : 4), 63 + (i / 3) * 54 + (p->inv[i].quantity > 1 ? 0 : 4), 2, 2);
+				gfx_ScaledTransparentSprite_NoClip(p->inv[i].icon, 170 + (i % 3) * 50, 71 + (i / 3) * 50, 2, 2);
 				if (p->inv[i].quantity > 1) {
-					draw_custom_text("x", COLOR_WHITE, (i % 3) * 54 + (p->inv[i].quantity >= 10 ? 171 : 179), 89 + (i / 3) * 54, 2);
-					draw_custom_int(p->inv[i].quantity, 1, COLOR_WHITE, (i % 3) * 54 + (p->inv[i].quantity > 10 ? 179 : 187), 89 + (i / 3) * 54, 2);
+					int offset = 0;
+					if (p->inv[i].quantity > 9 && p->inv[i].quantity < 100)
+						offset = 8;
+					else if (p->inv[i].quantity > 99)
+						offset = 16;
+					gfx_SetColor(COLOR_BLACK);
+					gfx_FillRectangle_NoClip((192 - offset) + (i % 3) * 50, 97 + (i / 3) * 50, 18 + offset, 14);
+					gfx_SetColor(COLOR_WHITE);
+					gfx_Rectangle_NoClip((191 - offset) + (i % 3) * 50, 96 + (i / 3) * 50, 20 + offset, 16);
+
+					draw_custom_text("x", COLOR_WHITE, (194 - offset) + (i % 3) * 50, 97 + (i / 3) * 50, 2);
+					draw_custom_int(p->inv[i].quantity, 1, COLOR_WHITE, (202 - offset) + (i % 3) * 50, 97 + (i / 3) * 50, 2);
 				}
 			}
-
 		}
 
-		// Draw inventory cursor.
-		gfx_Rectangle_NoClip(148 + (cursor_pos % 3) * 54, 56 + (cursor_pos / 3) * 54, 52, 52);
-
 		// Draw the player's equipped items
-		gfx_Rectangle_NoClip(16, 77, 55, 55);
-		gfx_Rectangle_NoClip(17, 78, 53, 53);
-		gfx_Rectangle_NoClip(80, 77, 55, 55);
-		gfx_Rectangle_NoClip(81, 78, 53, 53);
-		gfx_Rectangle_NoClip(16, 141, 55, 55);
-		gfx_Rectangle_NoClip(17, 142, 53, 53);
+		gfx_Rectangle_NoClip(23, 77, 55, 55);
+		gfx_Rectangle_NoClip(24, 78, 53, 53);
+		gfx_Rectangle_NoClip(87, 77, 55, 55);
+		gfx_Rectangle_NoClip(88, 78, 53, 53);
+		gfx_Rectangle_NoClip(23, 141, 55, 55);
+		gfx_Rectangle_NoClip(24, 142, 53, 53);
 
-		gfx_ScaledTransparentSprite_NoClip(p->equipped_armor != NULL ? p->equipped_armor->icon : b_frame, 21, 82, 3, 3);
-		gfx_ScaledTransparentSprite_NoClip(p->equipped_boots != NULL ? p->equipped_boots->icon : f_frame, 21, 146, 3, 3);
-		gfx_ScaledTransparentSprite_NoClip(p->equipped_weapon != NULL ? p->equipped_weapon->icon : h1_frame, 85, 82, 3, 3);
+		gfx_ScaledTransparentSprite_NoClip(p->equipped_armor != NULL ? p->equipped_armor->icon : b_frame, 28, 82, 3, 3);
+		gfx_ScaledTransparentSprite_NoClip(p->equipped_boots != NULL ? p->equipped_boots->icon : f_frame, 28, 146, 3, 3);
+		gfx_ScaledTransparentSprite_NoClip(p->equipped_weapon != NULL ? p->equipped_weapon->icon : h1_frame, 92, 82, 3, 3);
 
 		// Check for key presses.
 		if (can_press) {
