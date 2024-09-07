@@ -47,7 +47,7 @@ void game(int8_t game_mode) {
     p.y = 232;
     p.health = 200;
 	p.infected = false;
-	p.money = 500;
+	p.money = 1500;
 	p.points = 0;
     
     for (i = 0; i < 9; i++)
